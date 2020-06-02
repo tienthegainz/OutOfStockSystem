@@ -33,17 +33,12 @@ Organize training and validation subset into 4 folders:
 
 + val_xml: the folder that contatins the validation annotations in VOC format
 
-Splited and organized dataset can be download here: https://drive.google.com/open?id=1GBajAY1acVq93SffboL9Wqranv3Ubl7p
 
 ### 2. Config for training process
 
 Edit config.json file
 
-### 3. Download pretrained weights
-
-Download pretrained weights here: https://drive.google.com/file/d/14F_5mvXE-5sX4sG5EwThVydukp-lljXm/view?usp=sharing
-
-### 4. Training
+### 3. Training
 
 Run: 
 ```
@@ -87,58 +82,7 @@ Note: input_path is path to images folder you want to predict, output_path is pa
 
 ## Statistic Result:
 
-	On validation set, result acquired: 
-	balo: 0.9706
-	balo_diutre: 0.8207
-	bantreem: 0.8707
-	binh_sua: 0.8527
-	cautruot: 1.0000
-	coc_sua: 0.8517
-	ghe_an: 0.9794
-	ghe_bap_benh: 0.8333
-	ghe_ngoi_oto: 0.8977
-	ghedualung_treem: 0.8925
-	ke: 0.8090
-	noi: 0.9598
-	person: 0.7243
-	phao: 0.9365
-	quay_cui: 1.0000
-	tham: 0.8921
-	thanh_chan_cau_thang: 0.9706
-	thanh_chan_giuong: 0.9913
-	xe_babanh: 0.9211
-	xe_choichan: 0.9530
-	xe_day: 0.8852
-	xe_tapdi: 0.9091
-	xichdu: 0.8462
-	yem: 0.7337
-	mAP: 0.8959
-
-	On ghe_an_800 datset, result acquired:
-	thanh_chan_cau_thang: 1.0000
-	ghedualung_treem: 0.9788
-	ghe_an: 0.9628
-	cautruot: 0.9619
-	quay_cui: 0.9500
-	xe_choichan: 0.9167
-	balo_diutre: 0.8969
-	tham: 0.8969
-	person: 0.8870
-	binh_sua: 0.8708
-	xe_day: 0.8698
-	xe_tapdi: 0.8619
-	ke: 0.8383
-	bantreem: 0.8190
-	coc_sua: 0.7745
-	ghe_ngoi_oto: 0.7414
-	xe_babanh: 0.7388
-	thanh_chan_giuong: 0.6997
-	yem: 0.6905
-	balo: 0.6141
-	noi: 0.5897
-	xichdu: 0.5714
-	phao: 0.5412
-	ghe_bap_benh: 0.2222
-	mAP: 0.7873
-
+	chai: 1.0000
+	gói: 0.9998
+	mAP: 0.9999
 
