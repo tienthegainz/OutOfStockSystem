@@ -1,0 +1,8 @@
+h5py==2.10.0
+Keras==2.3.1
+numpy==1.18.1
+opencv-python==4.1.2.30
+Pillow==7.0.0
+tensorflow==2.1.0
+tqdm==4.41.1
+pascal_voc_writer
