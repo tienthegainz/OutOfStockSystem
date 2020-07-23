@@ -1,16 +1,5 @@
 # Object Detection
 
-Object detection for shop products - Phase 1, Jan-April/2020
-
-## Todo list:
-- [x] Traing on 24 classes
-- [x] mAP Evaluation
-- [x] Code for prediction on single image
-- [x] Code for prediction on a images folder
-- [x] Code to generate predicted result to pascal voc format (for upload annotation to cvat)
-- [ ] Error analysis on validation, new external dataset
-- [ ] Improve model to reduce false positive rate
-
 ## Install dependencies
 
 ```
@@ -20,8 +9,6 @@ pip install -r requirements.txt
 ## Training instruction
 
 ### 1.Dataset preparation
-
-Download dataset from CVAT in PASCAL VOC format and  split into training and validation subset by a pre-defined ratio.
 
 Organize training and validation subset into 4 folders:
 
