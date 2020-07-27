@@ -22,9 +22,11 @@
       341,
       260
     ],
-    "labels": ["chai", "gói"]
+    "labels": [
+      "chai",
+      "gói"
+    ]
   },
-
   "train": {
     "train_image_folder": "data/",
     "train_annot_folder": "data_xml/",
@@ -34,19 +36,19 @@
     "nb_epochs": 20,
     "warmup_epochs": 2,
     "ignore_thresh": 0.5,
-    "gpus": "0",
-
-    "grid_scales": [1, 1, 1],
+    "grid_scales": [
+      1,
+      1,
+      1
+    ],
     "obj_scale": 5,
     "noobj_scale": 1,
     "xywh_scale": 1,
     "class_scale": 1,
-
     "tensorboard_dir": "logs",
     "saved_weights_name": "yolo_final_weights.h5",
     "debug": true
   },
-
   "valid": {
     "valid_image_folder": "data/",
     "valid_annot_folder": "data_xml/",
