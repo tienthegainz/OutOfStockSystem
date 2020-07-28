@@ -1,0 +1,6 @@
+*.mp4
+*.h5
+image_data/
+__pycache__
+storage/
+*.db
