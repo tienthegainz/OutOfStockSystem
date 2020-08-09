@@ -6,5 +6,7 @@ DATABASE = {
 STORAGE = {
     'path': '/home/tienhv/GR/OutOfStockSystem/server/storage',
     'type': 'local',
-    'image_folder': 'image'
+    'image': 'image'
 }
+
+

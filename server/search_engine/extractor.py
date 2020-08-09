@@ -1,7 +1,6 @@
 import sys
 import os
-sys.path.append('server/search_engine')  # nopep8
-from model import resnet50
+from server.search_engine.model import resnet50
 from torchvision import transforms
 import torch
 import PIL
