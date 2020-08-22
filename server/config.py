@@ -6,7 +6,12 @@ DATABASE = {
 STORAGE = {
     'path': '/home/tienhv/GR/OutOfStockSystem/server/storage',
     'type': 'local',
-    'image': 'image'
+    'image': 'image',
+    'ann': 'ann'
 }
 
-
+SEARCHER = {
+    'dim': 2048,
+    'space': 'l2',
+    'threshold': 0.5
+}
