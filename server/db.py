@@ -1,64 +1,97 @@
 import sqlite3
-from sqlite3 import Error
+from sqlalchemy import create_engine
+from sqlalchemy import Column, Integer, String, Float, ForeignKey
+
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker
 
 
-class Database():
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(
+                Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class Database(metaclass=Singleton):
+    Base = declarative_base()
+
     def __init__(self, db_config):
         self.db_config = db_config
         if self.db_config['type'] == 'sqlite3':
             try:
-                self.conn = sqlite3.connect(self.db_config['path'])
-            except Error as e:
+                self.engine = create_engine(
+                    'sqlite:///{}'.format(self.db_config['path']), echo=True)
+                self.Session = sessionmaker(bind=self.engine)
+            except Exception as e:
                 print(e)
-                raise Error
+                raise Exception
         else:
             raise NotImplementedError(
                 '{} not supported'.format(self.db_config['type']))
 
-    def init_tables(self):
-        sql_create_products_table = """ CREATE TABLE IF NOT EXISTS `products`(
-                                    `id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-                                    `name`	TEXT NOT NULL,
-                                    `wgt`	REAL NOT NULL
-                                    ); """
-        sql_create_products_images_table = """ CREATE TABLE IF NOT EXISTS `products_images`(
-                                    `pid`	INTEGER NOT NULL,
-                                    `iid`	INTEGER NOT NULL,
-                                    `name`	TEXT NOT NULL,
-                                    PRIMARY KEY (pid, iid),
-                                    FOREIGN KEY(pid) REFERENCES products(id)
-                                    ); """
-        try:
-            c = self.conn.cursor()
-            c.execute(sql_create_products_table)
-            c.execute(sql_create_products_images_table)
-            self.conn.commit()
-        except Error as e:
-            print(e)
-            raise Error
+    def create_table(self):
+        Database.Base.metadata.create_all(self.engine)
 
-    def insert_products(self, values):
-        sql_insert_tb = """INSERT INTO products (name, wgt) VALUES(?, ?)"""
-        try:
-            c = self.conn.cursor()
-            c.execute(sql_insert_tb, values)
-            self.conn.commit()
-        except Error as e:
-            print(e)
-            raise Error
+    def create_session(self):
+        return self.Session()
 
-    def insert_products_images(self, values):
-        sql_insert_tb = """INSERT INTO products_images (pid, iid, name) VALUES(?, ?, ?)"""
-        try:
-            c = self.conn.cursor()
-            c.execute(sql_insert_tb, values)
-            self.conn.commit()
-        except Error as e:
-            print(e)
-            raise Error
+
+class Product(Database.Base):
+    __tablename__ = 'products'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    weight = Column(Float)
+    image = relationship("Image", back_populates="product",
+                         cascade="delete",
+                         passive_deletes=True
+                         )
+
+    def __init__(self, name, weight):
+        self.name = name
+        self.weight = weight
+
+    def __repr__(self):
+        return "<Product(name='%s', weight='%f')>" % (self.name, self.weight)
+
+
+class Image(Database.Base):
+    __tablename__ = 'images'
+    id = Column(Integer, primary_key=True)
+    path = Column(String)
+    product_id = Column(Integer, ForeignKey('products.id', ondelete="CASCADE"))
+    product = relationship("Product", back_populates="image")
+
+    def __init__(self, path, product_id):
+        self.path = path
+        self.product_id = product_id
+
+    def __repr__(self):
+        return "<Image(path='%s', product='%f')>" % (self.path, self.product_id)
 
 
 if __name__ == '__main__':
     import config
     db = Database(config.DATABASE)
-    db.init_tables()
+    # db.create_table()
+    session = db.create_session()
+
+    try:
+        # product1 = Product(name="Mi Hao Hao", weight=20)
+        # print(product1)
+        # product2 = Product(name="Chai nuoc Lavie", weight=20)
+        # print(product2)
+
+        # session.add(product1)
+        # session.add(product2)
+        # session.commit()
+        for id, in session.query(Product.id):
+            print(id)
+    except Exception as e:
+        print(e)
+        session.rollback()
+    finally:
+        session.close()
