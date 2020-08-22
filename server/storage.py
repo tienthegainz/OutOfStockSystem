@@ -1,5 +1,5 @@
 import os
-from db import Database, Singleton
+from db import Database, Singleton, Product, Image
 
 
 class Storage(metaclass=Singleton):
@@ -14,31 +14,43 @@ class Storage(metaclass=Singleton):
                 '{} not supported'.format(self.db_config['type']))
         self.db = Database(database_config)
 
-    def get_k_image_all_classes(self, k=8, db_map=True):
-        """
-            Get k or less(in case not enough k) from each class, label them
-        """
-        result = dict()
+    def map_image_cls(self):
+        cls_list = []
+        session = self.db.create_session()
+        try:
+            for id, in session.query(Product.id):
+                cls_list.append(id)
+        except Exception as e:
+            print(e)
+            raise Exception('Problem querying products\n')
+        finally:
+            session.close()
+
         for cls in os.listdir(self.img_path):
             cls_id = int(cls)
-            if self.db.check_product_id(cls_id):
-                print("Processing class {}".format(cls))
-                cls_path = os.path.join(self.img_path, cls)
-                image_path = [os.path.join(cls_path, image)
-                              for image in os.listdir(cls_path)[:k]]
-                for i in range(len(image_path)):
-                    img_id = cls_id*10+i
-                    print(
-                        "Class: {} - Image: {} - Path: {}".format(cls_id, img_id, image_path[i]))
-                    result[img_id] = image_path[i]
-            else:
-                print("Skip class {} not valid".format(cls))
-        if db_map:
-            print("Saved to db")
-        return result
+            if cls_id in cls_list:
+                session = self.db.create_session()
+                try:
+                    print("Processing class {}".format(cls_id))
+                    cls_path = os.path.join(self.img_path, cls)
+                    images_path = [os.path.join(cls_path, image)
+                                   for image in os.listdir(cls_path)]
+
+                    for image_path in images_path:
+                        a = Image(image_path, cls_id)
+                        print(a)
+                        session.add(a)
+                    session.commit()
+                except Exception as e:
+                    print(e)
+                    session.rollback()
+                finally:
+                    session.close()
+            print('=================================')
+        return
 
 
 if __name__ == "__main__":
     import config
     s = Storage(storage_config=config.STORAGE, database_config=config.DATABASE)
-    s.get_k_image_all_classes()
+    s.map_image_cls()
