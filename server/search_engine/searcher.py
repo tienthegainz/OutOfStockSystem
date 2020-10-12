@@ -79,8 +79,6 @@ class Searcher(metaclass=Singleton):
 
         data = np.squeeze(np.array(data), axis=1)
         index = np.array(index)
-        # print(data.shape)
-        # print(index)
         self.add_products(data, index)
 
     def save_graph(self):
@@ -88,28 +86,3 @@ class Searcher(metaclass=Singleton):
         self.p.save_index(self.graph_path)
         with open(self.index_path, 'w') as f:
             f.write(str(self.max_index))
-
-
-if __name__ == "__main__":
-    import config
-    from db import *
-    s = Searcher()
-    # db_instance = Database(config.DATABASE)
-    # session = db_instance.create_session()
-
-    # try:
-    #     images = session.query(Image).all()
-    #     s.build_graph_from_storage(images)
-    #     s.save_graph()
-    # except Exception as e:
-    #     print('Error: ', e)
-    #     session.rollback()
-    # finally:
-    #     session.close()
-    try:
-        data = s.extractor.extract(PIL.Image.open(
-            '/home/tienhv/GR/OutOfStockSystem/server/storage/image/2/1.jpeg'))
-        index = s.query_products(data)
-        print(index)
-    except Exception as err:
-        print(err)

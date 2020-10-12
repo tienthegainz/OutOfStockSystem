@@ -4,3 +4,5 @@ image_data/
 __pycache__
 storage/
 *.db
+image/
+*.pth

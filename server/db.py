@@ -1,9 +1,9 @@
-import sqlite3
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+import config
 
 
 class Singleton(type):
@@ -19,8 +19,8 @@ class Singleton(type):
 class Database(metaclass=Singleton):
     Base = declarative_base()
 
-    def __init__(self, db_config):
-        self.db_config = db_config
+    def __init__(self):
+        self.db_config = config.DATABASE
         if self.db_config['type'] == 'sqlite3':
             try:
                 self.engine = create_engine(

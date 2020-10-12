@@ -1,3 +1,7 @@
 {
-    "python.pythonPath": "/home/tienhv/anaconda3/envs/AI/bin/python"
+    "python.pythonPath": "/home/tienhv/anaconda3/envs/hust_gr/bin/python",
+    "python.envFile": "/home/tienhv/GR/OutOfStockSystem/.env",
+    "python.analysis.extraPaths": [
+        "./server"
+    ]
 }

@@ -19,6 +19,8 @@ class Extractor(metaclass=Singleton):
             transforms.Normalize(
                 [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
+        self.extract(PIL.Image.open(
+            "/home/tienhv/GR/OutOfStockSystem/server/storage/image/1/1.jpeg"))
 
     def extract(self, image):
         # Return numpy array
@@ -40,7 +42,3 @@ class Extractor(metaclass=Singleton):
 
     def get_output_size(self):
         return self.model.output_size
-
-
-if __name__ == "__main__":
-    e = Extractor()

@@ -15,3 +15,8 @@ SEARCHER = {
     'space': 'l2',
     'threshold': 0.5
 }
+
+DETECTOR = {
+    'num_classes': 3,
+    'weight': '/home/tienhv/GR/OutOfStockSystem/server/detect_engine/checkpoint_18.pth'
+}
