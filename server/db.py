@@ -1,9 +1,6 @@
-from sqlalchemy import create_engine
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
-
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
 import config
+import sqlite3
+from sqlite3 import Error
 
 
 class Singleton(type):
@@ -17,81 +14,87 @@ class Singleton(type):
 
 
 class Database(metaclass=Singleton):
-    Base = declarative_base()
 
     def __init__(self):
-        self.db_config = config.DATABASE
-        if self.db_config['type'] == 'sqlite3':
+        db_config = config.DATABASE
+        if db_config['type'] == 'sqlite3':
             try:
-                self.engine = create_engine(
-                    'sqlite:///{}'.format(self.db_config['path']), echo=True)
-                self.Session = sessionmaker(bind=self.engine)
-            except Exception as e:
+                self.db_file = db_config['path']
+                self.conn = sqlite3.connect(
+                    self.db_file, check_same_thread=False)
+            except Error as e:
                 print(e)
-                raise Exception
         else:
-            raise NotImplementedError(
-                '{} not supported'.format(self.db_config['type']))
+            raise NotImplementedError('Only support sqlite3 now')
 
     def create_table(self):
-        Database.Base.metadata.create_all(self.engine)
+        raise NotImplementedError
 
-    def create_session(self):
-        return self.Session()
+    def create_cursor(self):
+        return self.conn.cursor()
+
+    def insert(self, table, value):
+        placeholder = ','.join(['?' for i in range(len(value))])
+        sql = 'INSERT INTO {} VALUES({})'.format(table, placeholder)
+        cur = self.create_cursor()
+        cur.execute(sql, value)
+        self.conn.commit()
+        return cur.lastrowid
+
+    def get(self, sql, ENTITY, value=None, limit=-1):
+        if sql == None:
+            print('No sql provided')
+            return None
+        cur = self.create_cursor()
+        if value == None:
+            cur.execute(sql)
+        else:
+            cur.execute(sql, value)
+
+        if limit == -1:
+            results = cur.fetchall()
+            return [ENTITY(r) for r in results] if results else None
+
+        elif limit > 1:
+            results = cur.fetchmany(limit)
+            return [ENTITY(r) for r in results] if results else None
+
+        elif limit == 1:
+            result = cur.fetchone()
+            return ENTITY(result) if result else None
+
+        return None
 
 
-class Product(Database.Base):
-    __tablename__ = 'products'
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    weight = Column(Float)
-    image = relationship("Image", back_populates="product",
-                         cascade="delete",
-                         passive_deletes=True
-                         )
-
-    def __init__(self, name, weight):
-        self.name = name
-        self.weight = weight
+class ImageModel():
+    def __init__(self, value):
+        self.id = int(value[0])
+        self.path = value[1]
+        self.product_id = int(value[2])
 
     def __repr__(self):
-        return "<Product(name='%s', weight='%f')>" % (self.name, self.weight)
+        return "<Image(id = '%d', path='%s', product='%d')>" % (self.id, self.path, self.product_id)
 
 
-class Image(Database.Base):
-    __tablename__ = 'images'
-    id = Column(Integer, primary_key=True)
-    path = Column(String)
-    product_id = Column(Integer, ForeignKey('products.id', ondelete="CASCADE"))
-    product = relationship("Product", back_populates="image")
-
-    def __init__(self, path, product_id):
-        self.path = path
-        self.product_id = product_id
+class ProductModel():
+    def __init__(self, value):
+        self.id = int(value[0])
+        self.name = value[1]
+        self.weight = float(value[2])
 
     def __repr__(self):
-        return "<Image(path='%s', product='%f')>" % (self.path, self.product_id)
+        return "<Product(id = '%d', name='%s', weight='%f')>" % (self.id, self.name, self.weight)
 
 
-if __name__ == '__main__':
-    import config
-    db = Database(config.DATABASE)
-    # db.create_table()
-    session = db.create_session()
+if __name__ == "__main__":
+    db = Database()
 
-    try:
-        # product1 = Product(name="Mi Hao Hao", weight=20)
-        # print(product1)
-        # product2 = Product(name="Chai nuoc Lavie", weight=20)
-        # print(product2)
+    # result1 = db.get(sql="SELECT * FROM images", ENTITY=ImageModel)
+    # print(result1)
 
-        # session.add(product1)
-        # session.add(product2)
-        # session.commit()
-        for id, in session.query(Product.id):
-            print(id)
-    except Exception as e:
-        print(e)
-        session.rollback()
-    finally:
-        session.close()
+    # result2 = db.get(sql="SELECT * FROM images", ENTITY=ImageModel, limit=1)
+    # print(result2)
+
+    result3 = db.get(sql="SELECT * FROM images WHERE id = ?", ENTITY=ImageModel,
+                     value=(20, ), limit=1)
+    print(result3)
