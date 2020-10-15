@@ -8,20 +8,22 @@ import PIL
 
 
 class Searcher(metaclass=Singleton):
-    def __init__(self, dim=2048, space='l2', threshold=0.5):
+    def __init__(self):
         """
             Args:
                 dim: face embedding feature length
                 space: distance algorithm (L2, Inner product, cosine)
                 threshold: similarity threshold
         """
-        storage = config.STORAGE
+        storage_config = config.STORAGE
+        search_config = config.SEARCHER
         self.graph_path = os.path.join(
-            storage['path'], storage['ann'], 'index.bin')
+            storage_config['path'], storage_config['ann'], 'index.bin')
         self.index_path = os.path.join(
-            storage['path'], storage['ann'], 'current_index')
+            storage_config['path'], storage_config['ann'], 'current_index')
 
-        self.p = hnswlib.Index(space=space, dim=dim)
+        self.p = hnswlib.Index(
+            space=search_config['space'], dim=search_config['dim'])
         if os.path.isfile(self.graph_path):
             print('Loading graph: ', self.graph_path)
             self.p.load_index(self.graph_path, max_elements=1000)
@@ -30,7 +32,7 @@ class Searcher(metaclass=Singleton):
             self.p.set_ef(20)
 
         self.k = 1
-        self.threshold = threshold
+        self.threshold = search_config['threshold']
         if os.path.isfile(self.index_path):
             with open(self.index_path, 'r') as f:
                 a = f.readline()
@@ -64,7 +66,7 @@ class Searcher(metaclass=Singleton):
             index = np.squeeze(index)
             distance = np.squeeze(distance)
             print('Index: ', index, '\nDistance: ', distance)
-            return index if distance < self.threshold else None
+            return int(index) if distance < self.threshold else None
         except Exception as err:
             # TODO: Logging here
             print(err)
