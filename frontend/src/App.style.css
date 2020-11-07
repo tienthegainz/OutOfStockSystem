@@ -1,0 +1,38 @@
+.title {
+  text-align: center;
+}
+
+.main {
+  display: flex;
+  margin: auto;
+  width: 90%;
+}
+
+.main .left {
+  align-items: center;
+  justify-content: center;
+  background-color: cadetblue;
+  margin: 10px;
+  width: 700px;
+  height: 700px;
+}
+
+.main .left img {
+  width: 700px;
+  height: 700px;
+}
+
+.main .right {
+  width: 1000px;
+  height: 700px;
+  margin: 10px;
+  background-color: #040303;
+  overflow: scroll;
+}
+
+.main .right .log {
+  color: white;
+  word-wrap: break-word;
+  margin: 10px;
+  font-size: 30px;
+}
