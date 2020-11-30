@@ -1,3 +1,4 @@
+
 DATABASE = {
     'path': '/home/tienhv/GR/OutOfStockSystem/server/dummy.db',
     'type': 'sqlite3'
@@ -18,5 +19,10 @@ SEARCHER = {
 
 DETECTOR = {
     'num_classes': 3,
+    'overlap_thres': 0.7,
     'weight': '/home/tienhv/GR/OutOfStockSystem/server/detect_engine/checkpoint_18.pth'
+}
+
+TRACKER = {
+
 }

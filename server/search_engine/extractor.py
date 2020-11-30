@@ -10,6 +10,10 @@ from db import *
 
 
 class Extractor(metaclass=Singleton):
+    """
+        Exect image feature to build graph
+    """
+
     def __init__(self, size=248):
         self.model = resnet50(pretrained=True, progress=True)
         self.size = size
