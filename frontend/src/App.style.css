@@ -2,6 +2,37 @@
   text-align: center;
 }
 
+.ready {
+  text-align: center;
+  font-size: 35px;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.fire {
+  text-align: center;
+  background-color: red;
+  color: white;
+  font-size: 35px;
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.fire p {
+  animation: blink 1s linear infinite;
+}
+
 .main {
   display: flex;
   margin: auto;

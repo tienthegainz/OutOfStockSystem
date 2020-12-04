@@ -9,6 +9,8 @@ const App = () => {
   const [image, setImage] = useState("");
   const [logs, setLogs] = useState([]);
   const [logCounter, setLogCounter] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [fire, setFire] = useState(true);
 
   useEffect(() => {
     const socket = socketIOClient(ENDPOINT);
@@ -20,7 +22,7 @@ const App = () => {
 
     // CLEAN UP THE EFFECT
     return () => socket.disconnect();
-  }, [])
+  }, []);
 
   useEffect(() => {
     const socket = socketIOClient(ENDPOINT);
@@ -37,9 +39,31 @@ const App = () => {
     return () => socket.disconnect();
   }, [logCounter, logs]);
 
+  useEffect(() => {
+    const socket = socketIOClient(ENDPOINT);
+    socket.on('ready', data => {
+      setReady(data.ready);
+    });
+
+    // CLEAN UP THE EFFECT
+    return () => socket.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const socket = socketIOClient(ENDPOINT);
+    socket.on('fire', data => {
+      setFire(data.fire);
+    });
+
+    // CLEAN UP THE EFFECT
+    return () => socket.disconnect();
+  }, []);
+
   return (
     <div>
       <h1 className="title">Product watcher</h1>
+      {ready ? null : <p className="ready"><i className="fa fa-refresh fa-spin" /> Booting</p>}
+      {fire ? <div className="fire"><p>Warning!!!!<br />There may be fire</p></div> : null}
       <div className="main" >
         <div className="left">
           <img src={image} className="image" alt="Img" />
