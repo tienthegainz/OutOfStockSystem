@@ -26,7 +26,7 @@ class Detector(metaclass=Singleton):
         self.tfms = self.init_transform()
         self.unnormalize = UnNormalizer()
         img = Image.open(
-            'detect_engine/dummy.jpg')
+            '/home/tienhv/GR/OutOfStockSystem/server/dummy.jpg')
         self.predict(img)
         print("Booting done")
 
@@ -137,7 +137,7 @@ class Detector(metaclass=Singleton):
             classification = classification.cpu()
             transformed_anchors = transformed_anchors.cpu()
 
-            print('Elapsed time: {}'.format(time.time()-st))
+            print('Detect time: {}'.format(time.time()-st))
             idxs = np.where(scores > 0.5)
 
             products = []
@@ -173,3 +173,6 @@ class Detector(metaclass=Singleton):
             # pil_image = Image.fromarray(image_orig.astype(np.uint8))
 
             return {'image': image_orig, 'products': products, 'bboxes': point_bbox}
+
+    def test(self):
+        return True

@@ -12,8 +12,9 @@ class Tracker(metaclass=Singleton):
 
     def __init__(self):
         self.count = 0
-        self.bbox = None
+        self.track_obj = {}
         self.frame = None
+        self.bbox = None
 
     def update(self, frame, bbox):
         self.bbox = bbox

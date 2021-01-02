@@ -3,14 +3,14 @@ import socketIOClient from "socket.io-client";
 import './App.style.css';
 
 const ENDPOINT = "http://0.0.0.0:5001"
-const axios = require('axios');
+// const axios = require('axios');
 
 const App = () => {
   const [image, setImage] = useState("");
   const [logs, setLogs] = useState([]);
   const [logCounter, setLogCounter] = useState(0);
   const [ready, setReady] = useState(false);
-  const [fire, setFire] = useState(true);
+  const [fire, setFire] = useState(false);
 
   useEffect(() => {
     const socket = socketIOClient(ENDPOINT);
@@ -52,6 +52,7 @@ const App = () => {
   useEffect(() => {
     const socket = socketIOClient(ENDPOINT);
     socket.on('fire', data => {
+      console.log(data.fire);
       setFire(data.fire);
     });
 

@@ -1,58 +1,60 @@
 from db import Database, ImageModel, ProductModel
 from detect_engine.detector import Detector
+from fire_engine.fire import FireAlarm
 from search_engine.searcher import Searcher
 from search_engine.extractor import Extractor
 from tracker_engine.tracker import Tracker
-from flask import Flask, request, jsonify
+# from daemon import fire_alert
+from flask import Flask, jsonify, request
 from flask_socketio import SocketIO
 from flask_cors import CORS
 from PIL import Image
+from celery import Celery
 import io
-import argparse
 import traceback
 import time
 import numpy as np
-import config
-import os
 import base64
 
 
-parser = argparse.ArgumentParser(
-    description='App arguments')
-parser.add_argument('--build', action="store_true", help='Build tree on load')
-args = parser.parse_args()
-
-
 app = Flask(__name__)
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379'
+
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+
+socketio = SocketIO(app, cors_allowed_origins="*", message_queue='redis://')
+
+celery = Celery(
+    app.name, broker=app.config['CELERY_BROKER_URL'],
+    backend=app.config['CELERY_RESULT_BACKEND'])
 
 
-extractor = Extractor()
-searcher = Searcher()
-database = Database()
-detector = Detector()
-tracker = Tracker()
+extractor = None
+searcher = None
+database = None
+detector = None
+tracker = None
+fire_alarm = FireAlarm()
 
 count = 0
-ready = True
 
 
-def boot_app():
-    global extractor
-    global searcher
-    global database
+# def boot_app():
+#     global extractor
+#     global searcher
+#     global database
 
-    if not os.path.isfile(config.DATABASE['path']):
-        database.create_table()
+#     if not os.path.isfile(config.DATABASE['path']):
+#         database.create_table()
 
-    print("Build searching tree for first time")
-    try:
-        images = database.get(sql="SELECT * FROM images")
-        searcher.build_graph_from_storage(images)
-        searcher.save_graph()
-    except Exception as e:
-        raise e
+#     print("Build searching tree for first time")
+#     try:
+#         images = database.get(sql="SELECT * FROM images")
+#         searcher.build_graph_from_storage(images)
+#         searcher.save_graph()
+#     except Exception as e:
+#         raise e
 
 
 def search_product(data):
@@ -72,41 +74,6 @@ def search_product(data):
     except Exception as e:
         traceback.print_exc()
     return None
-
-
-# def process_image(image):
-#     global count, ready
-#     products = []
-
-#     if count == 0:
-#         if ready:
-#             # notify loading
-#             # socketio.emit('log', {'log': 'Waiting for boot'}, broadcast=True)
-#             ready = False
-#             data = detector.predict(image)
-#             products = search_product(data['products'])
-#             print(
-#                 "Bbox: {} - image: {}".format(data['bboxes'][0], data['image'].shape))
-#             print("Init track: ", tracker.init_tracker(
-#                 data['image'], data['bboxes'][0]))
-#             draw_img = tracker.draw()
-
-#             result_image = Image.fromarray(draw_img.astype(np.uint8))
-#             img_byte = io.BytesIO()
-#             result_image.save(img_byte, format='jpeg')
-#             base64_image = base64.b64encode(
-#                 img_byte.getvalue()).decode('utf-8')
-#             count += 1
-#             ready = True
-#             # notify loading complete
-#             # socketio.emit('log', {'log': 'Booting completed'}, broadcast=True)
-#             return True, base64_image, products
-#         elif not ready:
-#             return False, None, None
-#     else:
-#         return False, None, None
-
-#     return False, None, None
 
 
 def detect_search_object(image):
@@ -139,24 +106,50 @@ def track_image(image, bbox=None):
     return base64_image
 
 
+@celery.task
+def fire_alert(data):
+    socketio = SocketIO(app, cors_allowed_origins="*",
+                        message_queue='redis://')
+    print('Detecting fire...')
+    with app.app_context():
+        image_data = base64.b64decode(data)
+        image = Image.open(io.BytesIO(image_data))
+        result = fire_alarm.check_fire(image)
+        socketio.emit('fire', {'fire': True})
+
+
 @socketio.on('camera')
 def socket_camera(data):
-    image_data = base64.b64decode(data['image'])
-    image = Image.open(io.BytesIO(image_data))
-    bbox = data['bbox'] if 'bbox' in data else None
+    global count
+    if count == 0:
+        socketio.emit('ready', {'ready': True})
+    try:
+        count += 1
+        image_data = base64.b64decode(data['image'])
+        image = Image.open(io.BytesIO(image_data))
 
-    result_image = track_image(image, bbox)
+        if count % 20 == 0:
+            print('Run background job')
+            fire_alert.delay(data['image'])
 
-    socketio.emit('image', {'image': result_image}, broadcast=True)
+        bbox = data['bbox'] if 'bbox' in data else None
+
+        result_image = track_image(image, bbox)
+
+        socketio.emit('image', {'image': result_image}, broadcast=True)
+    except Exception as err:
+        print(err)
 
 
-@app.route('/hello', methods=['POST'])
+@app.route('/hello', methods=['GET'])
 def hello():
-    return jsonify({'message': 'hello'})
+    # fire_alert.delay()
+    return jsonify({'message': 'hello', 'legit': detector.test()})
 
 
 @app.route('/product/detect', methods=['POST'])
 def watch_product():
+    socketio.emit('ready', {'ready': False})
     image_data = request.files['image'].read()
     image = Image.open(io.BytesIO(image_data))
     result_image, products, bbox = detect_search_object(image)
@@ -170,8 +163,13 @@ def watch_product():
 
 
 if __name__ == '__main__':
-    if args.build:
-        boot_app()
+    # if args.build:
+    #     boot_app()
     # app.run(host='0.0.0.0', port='5001', debug=True, use_reloader=False)
+    detector = Detector()
+    extractor = Extractor()
+    searcher = Searcher()
+    database = Database()
+    tracker = Tracker()
     socketio.run(app, host='0.0.0.0', port='5001',
                  debug=True, use_reloader=False)

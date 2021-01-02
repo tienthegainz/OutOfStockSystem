@@ -6,3 +6,4 @@ storage/
 *.db
 image/
 *.pth
+*.rdb
