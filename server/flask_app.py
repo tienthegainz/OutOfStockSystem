@@ -15,6 +15,9 @@ import traceback
 import time
 import numpy as np
 import base64
+import string
+import random
+import cv2
 
 
 app = Flask(__name__)
@@ -24,6 +27,7 @@ app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379'
 CORS(app)
 
 socketio = SocketIO(app, cors_allowed_origins="*", message_queue='redis://')
+# socketio = SocketIO(app, cors_allowed_origins="*")
 
 celery = Celery(
     app.name, broker=app.config['CELERY_BROKER_URL'],
@@ -36,25 +40,13 @@ database = None
 detector = None
 tracker = None
 fire_alarm = FireAlarm()
+cv2_tracker = cv2.TrackerKCF_create()
 
 count = 0
 
 
-# def boot_app():
-#     global extractor
-#     global searcher
-#     global database
-
-#     if not os.path.isfile(config.DATABASE['path']):
-#         database.create_table()
-
-#     print("Build searching tree for first time")
-#     try:
-#         images = database.get(sql="SELECT * FROM images")
-#         searcher.build_graph_from_storage(images)
-#         searcher.save_graph()
-#     except Exception as e:
-#         raise e
+def image_name_generator(size=6, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size)) + '.jpg'
 
 
 def search_product(data):
@@ -78,25 +70,36 @@ def search_product(data):
 
 def detect_search_object(image):
     data = detector.predict(image)
-    products = search_product(data['products'])
-    tracker.update(data['image'], data['bboxes'][0])
-    draw_img = tracker.draw()
 
-    result_image = Image.fromarray(draw_img.astype(np.uint8))
-    img_byte = io.BytesIO()
-    result_image.save(img_byte, format='jpeg')
-    base64_image = base64.b64encode(
-        img_byte.getvalue()).decode('utf-8')
-    return base64_image, products, data['bboxes'][0]
+    if data['products']:
+        products = search_product(data['products'])
+        tracker.update(data['image'], data['bboxes'][0])
+        draw_img = tracker.draw()
+        result_image = Image.fromarray(draw_img.astype(np.uint8))
+        img_byte = io.BytesIO()
+        result_image.save(img_byte, format='jpeg')
+        base64_image = base64.b64encode(
+            img_byte.getvalue()).decode('utf-8')
+        return base64_image, products, data['bboxes'][0]
+    else:
+        img_byte = io.BytesIO()
+        image.save(img_byte, format='jpeg')
+        base64_image = base64.b64encode(
+            img_byte.getvalue()).decode('utf-8')
+        return base64_image, [], None
 
 
-def track_image(image, bbox=None):
+def track_image(data, bbox=None):
+    image_data = base64.b64decode(data)
+    image = Image.open(io.BytesIO(image_data))
     np_image = np.array(image)
     if bbox != None:
         tracker.update(np_image, bbox)
     else:
         tracker.update_frame(np_image)
     draw_img = tracker.draw()
+    if tracker.check_outside():
+        save_image.delay(data)
 
     result_image = Image.fromarray(draw_img.astype(np.uint8))
     img_byte = io.BytesIO()
@@ -106,7 +109,12 @@ def track_image(image, bbox=None):
     return base64_image
 
 
-@celery.task
+def convert_base64_cv_image(base64_data):
+    nparr = np.fromstring(base64_data.decode('base64'), np.uint8)
+    return cv2.imdecode(nparr, cv2.IMREAD_ANYCOLOR)
+
+
+@celery.task(ignore_result=True)
 def fire_alert(data):
     socketio = SocketIO(app, cors_allowed_origins="*",
                         message_queue='redis://')
@@ -115,7 +123,37 @@ def fire_alert(data):
         image_data = base64.b64decode(data)
         image = Image.open(io.BytesIO(image_data))
         result = fire_alarm.check_fire(image)
-        socketio.emit('fire', {'fire': True})
+        socketio.emit('fire', {'fire': result})
+
+
+@celery.task(ignore_result=True)
+def save_image(data):
+    socketio = SocketIO(app, cors_allowed_origins="*",
+                        message_queue='redis://')
+    print('Saving image...')
+    with app.app_context():
+        socketio.emit('log', {'log': 'Object is out of ROI. Saving image...'})
+    image_data = base64.b64decode(data)
+    image = Image.open(io.BytesIO(image_data))
+    path = '/home/tienhv/GR/OutOfStockSystem/server/images/' + image_name_generator()
+    image.save(path)
+
+
+@celery.task(ignore_result=True)
+def init_cv2_tracker(data):
+    t = time.time()
+    image = convert_base64_cv_image(data['image'])
+    tracker.init(image, data['bbox'])
+    print('Time: {}'.format(time.time() - t))
+
+
+@celery.task(ignore_result=True)
+def update_cv2_tracker(image_string):
+    t = time.time()
+    image = convert_base64_cv_image(image_string)
+    (success, box) = tracker.update(image)
+    print('Time: {}'.format(time.time() - t))
+    print("{} - {}".format(success, box))
 
 
 @socketio.on('camera')
@@ -128,13 +166,13 @@ def socket_camera(data):
         image_data = base64.b64decode(data['image'])
         image = Image.open(io.BytesIO(image_data))
 
-        if count % 20 == 0:
-            print('Run background job')
-            fire_alert.delay(data['image'])
+        # if count % 10 == 0:
+        #     print('Run background job')
+        #     fire_alert.delay(data['image'])
 
         bbox = data['bbox'] if 'bbox' in data else None
 
-        result_image = track_image(image, bbox)
+        result_image = track_image(data['image'], bbox)
 
         socketio.emit('image', {'image': result_image}, broadcast=True)
     except Exception as err:
@@ -143,7 +181,6 @@ def socket_camera(data):
 
 @app.route('/hello', methods=['GET'])
 def hello():
-    # fire_alert.delay()
     return jsonify({'message': 'hello', 'legit': detector.test()})
 
 
@@ -163,9 +200,8 @@ def watch_product():
 
 
 if __name__ == '__main__':
-    # if args.build:
-    #     boot_app()
     # app.run(host='0.0.0.0', port='5001', debug=True, use_reloader=False)
+    del fire_alarm
     detector = Detector()
     extractor = Extractor()
     searcher = Searcher()
