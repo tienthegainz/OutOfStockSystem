@@ -241,11 +241,9 @@ if __name__ == "__main__":
     crawler = GoogleImageCrawler(feeder_threads=1,
                                  parser_threads=1,
                                  downloader_threads=4,
-                                 storage={'root_dir': 'image'})
+                                 storage={'root_dir': '/home/tienhv/GR/OutOfStockSystem/image/neutral'})
 
-    products = {"lon nuoc ngot": 200, "lon bia": 200, "sua lon": 200,
-                "chai nuoc khoang": 200, "chai nuoc ngot": 200, "chai nuoc mam": 200,
-                "bim bim": 200, "goi mi tom": 100}
+    products = {"indoor house": 200, "house": 200}
 
     for k, v in products.items():
         crawler.crawl(keyword=k, max_num=v)

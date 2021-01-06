@@ -8,6 +8,9 @@ import PIL
 
 
 class Searcher(metaclass=Singleton):
+    """
+        Search which product by its image
+    """
     def __init__(self):
         """
             Args:

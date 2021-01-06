@@ -1,0 +1,69 @@
+.title {
+  text-align: center;
+}
+
+.ready {
+  text-align: center;
+  font-size: 35px;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.fire {
+  text-align: center;
+  background-color: red;
+  color: white;
+  font-size: 35px;
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.fire p {
+  animation: blink 1s linear infinite;
+}
+
+.main {
+  display: flex;
+  margin: auto;
+  width: 90%;
+}
+
+.main .left {
+  align-items: center;
+  justify-content: center;
+  background-color: cadetblue;
+  margin: 10px;
+  width: 700px;
+  height: 700px;
+}
+
+.main .left img {
+  width: 700px;
+  height: 700px;
+}
+
+.main .right {
+  width: 1000px;
+  height: 700px;
+  margin: 10px;
+  background-color: #040303;
+  overflow: scroll;
+}
+
+.main .right .log {
+  color: white;
+  word-wrap: break-word;
+  margin: 10px;
+  font-size: 30px;
+}
