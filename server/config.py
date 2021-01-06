@@ -1,6 +1,6 @@
 
 DATABASE = {
-    'path': '/home/tienhv/GR/OutOfStockSystem/server/dummy.db',
+    'path': '/home/tienhv/GR/OutOfStockSystem/server/dev.db',
     'type': 'sqlite3'
 }
 
@@ -24,5 +24,6 @@ DETECTOR = {
 }
 
 TRACKER = {
-
+    # x, y, h, w
+    'roi': [144, 250, 432, 330]
 }
