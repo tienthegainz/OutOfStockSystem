@@ -1,4 +1,4 @@
-from db import Database, ImageModel, ProductModel
+from db import Database, LogImageModel, ProductImageModel, ProductModel
 from detect_engine.detector import Detector
 from fire_engine.fire import FireAlarm
 from search_engine.searcher import Searcher
@@ -10,6 +10,7 @@ from flask_socketio import SocketIO
 from flask_cors import CORS
 from PIL import Image
 from celery import Celery
+from firebase_config import FIREBASE_CONFIG
 import io
 import traceback
 import time
@@ -18,6 +19,9 @@ import base64
 import string
 import random
 import cv2
+import pyrebase
+import re
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -36,11 +40,12 @@ celery = Celery(
 
 extractor = None
 searcher = None
-database = None
+database = Database()
 detector = None
 tracker = None
 fire_alarm = FireAlarm()
-cv2_tracker = cv2.TrackerKCF_create()
+firebase_app = pyrebase.initialize_app(FIREBASE_CONFIG)
+firebase_storage = firebase_app.storage()
 
 count = 0
 
@@ -56,7 +61,7 @@ def search_product(data):
             pil_prod = Image.fromarray(prod.astype('uint8'), 'RGB')
             feature = extractor.extract(pil_prod)
             index = searcher.query_products(feature)
-            image_info = database.get(sql="SELECT * FROM images WHERE id = ?", ENTITY=ImageModel,
+            image_info = database.get(sql="SELECT * FROM product_image WHERE id = ?", ENTITY=ProductImageModel,
                                       value=(index, ), limit=1)
             product = database.get(sql="SELECT * FROM products WHERE id = ?", ENTITY=ProductModel,
                                    value=(image_info.product_id, ), limit=1)
@@ -109,11 +114,6 @@ def track_image(data, bbox=None):
     return base64_image
 
 
-def convert_base64_cv_image(base64_data):
-    nparr = np.fromstring(base64_data.decode('base64'), np.uint8)
-    return cv2.imdecode(nparr, cv2.IMREAD_ANYCOLOR)
-
-
 @celery.task(ignore_result=True)
 def fire_alert(data):
     socketio = SocketIO(app, cors_allowed_origins="*",
@@ -133,27 +133,18 @@ def save_image(data):
     print('Saving image...')
     with app.app_context():
         socketio.emit('log', {'log': 'Object is out of ROI. Saving image...'})
-    image_data = base64.b64decode(data)
-    image = Image.open(io.BytesIO(image_data))
-    path = '/home/tienhv/GR/OutOfStockSystem/server/images/' + image_name_generator()
-    image.save(path)
-
-
-@celery.task(ignore_result=True)
-def init_cv2_tracker(data):
-    t = time.time()
-    image = convert_base64_cv_image(data['image'])
-    tracker.init(image, data['bbox'])
-    print('Time: {}'.format(time.time() - t))
-
-
-@celery.task(ignore_result=True)
-def update_cv2_tracker(image_string):
-    t = time.time()
-    image = convert_base64_cv_image(image_string)
-    (success, box) = tracker.update(image)
-    print('Time: {}'.format(time.time() - t))
-    print("{} - {}".format(success, box))
+    # image_data = base64.b64decode(data)
+    # image = Image.open(io.BytesIO(image_data))
+    # path = '/home/tienhv/GR/OutOfStockSystem/server/images/' + image_name_generator()
+    # image.save(path)
+    send_image = io.BytesIO(
+        base64.b64decode(re.sub("data:image/jpeg;base64", '', data)))
+    image_name = image_name_generator()
+    firebase_storage.child(
+        "images/{}".format(image_name)).put(send_image)
+    url = firebase_storage.child("images/{}".format(image_name)).get_url(None)
+    t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    database.insert('INSERT INTO log_image(url, time) VALUES(?,?)', (url, t))
 
 
 @socketio.on('camera')
@@ -199,13 +190,23 @@ def watch_product():
     return jsonify({'success': True, 'bbox': bbox})
 
 
+@app.route('/product/log', methods=['GET'])
+def get_all_image_log():
+    images = database.get(
+        "SELECT * FROM log_image ORDER BY id DESC", LogImageModel)
+    json_images = [image.dict() for image in images]
+    return jsonify({'success': True, 'data': json_images})
+
+
 if __name__ == '__main__':
     # app.run(host='0.0.0.0', port='5001', debug=True, use_reloader=False)
     del fire_alarm
+    del firebase_app
+    del firebase_storage
     detector = Detector()
     extractor = Extractor()
     searcher = Searcher()
-    database = Database()
+    # database = Database()
     tracker = Tracker()
     socketio.run(app, host='0.0.0.0', port='5001',
                  debug=True, use_reloader=False)

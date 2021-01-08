@@ -25,10 +25,11 @@ class Detector(metaclass=Singleton):
         self.detect_model = self.init_model()
         self.tfms = self.init_transform()
         self.unnormalize = UnNormalizer()
+        # give RAM space
         img = Image.open(
-            '/home/tienhv/GR/OutOfStockSystem/server/dummy.jpg')
+            '/home/tienhv/GR/OutOfStockSystem/server/storage/image/1/1.jpeg')
         self.predict(img)
-        print("Booting done")
+        print("Booting detection: Done")
 
     def read_checkpoint(self):
         checkpoint = torch.load(self.config['weight'])

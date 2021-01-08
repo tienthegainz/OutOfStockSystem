@@ -19,6 +19,7 @@ class FireAlarm(metaclass=Singleton):
     def __init__(self):
         self.fire_model = resnet101(num_classes=3)
         self.device = torch.device('cpu')
+        print("Booting fire detection model with {}".format(self.device))
         self.fire_model.load_state_dict(torch.load(
             '/home/tienhv/GR/OutOfStockSystem/server/fire_engine/FireNet_ver2_epoch_2_loss_0.09.pth', map_location=self.device))
         self.fire_model.eval()
@@ -29,10 +30,11 @@ class FireAlarm(metaclass=Singleton):
             transforms.Normalize(
                 [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
-        # boot
+        # give RAM space
         image = self.preprocess_image(Image.open(
-            '/home/tienhv/GR/OutOfStockSystem/server/dummy.jpg'))
+            '/home/tienhv/GR/OutOfStockSystem/server/storage/image/1/1.jpeg'))
         self.fire_model(image)
+        print("Booting fire detection: Done")
 
     def check_fire(self, image):
         t = time.time()
