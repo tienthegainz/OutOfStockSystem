@@ -1,9 +1,12 @@
 *.mp4
 *.h5
-image_data/
+images/
 __pycache__
 storage/
 *.db
 image/
 *.pth
 *.rdb
+
+firebase-cred.json
+firebase_config.py
