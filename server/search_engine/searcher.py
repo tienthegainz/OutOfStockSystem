@@ -11,6 +11,7 @@ class Searcher(metaclass=Singleton):
     """
         Search which product by its image
     """
+
     def __init__(self):
         """
             Args:
@@ -22,8 +23,8 @@ class Searcher(metaclass=Singleton):
         search_config = config.SEARCHER
         self.graph_path = os.path.join(
             storage_config['path'], storage_config['ann'], 'index.bin')
-        self.index_path = os.path.join(
-            storage_config['path'], storage_config['ann'], 'current_index')
+        # self.index_path = os.path.join(
+        #     storage_config['path'], storage_config['ann'], 'current_index')
 
         self.p = hnswlib.Index(
             space=search_config['space'], dim=search_config['dim'])
@@ -36,13 +37,13 @@ class Searcher(metaclass=Singleton):
 
         self.k = 1
         self.threshold = search_config['threshold']
-        if os.path.isfile(self.index_path):
-            with open(self.index_path, 'r') as f:
-                a = f.readline()
-                print('Loading index {} => value: {} '.format(self.graph_path, a))
-                self.max_index = int(a)
-        else:
-            self.max_index = 0
+        # if os.path.isfile(self.index_path):
+        #     with open(self.index_path, 'r') as f:
+        #         a = f.readline()
+        #         print('Loading index {} => value: {} '.format(self.graph_path, a))
+        #         self.max_index = int(a)
+        # else:
+        #     self.max_index = 0
 
         self.extractor = Extractor()
 
@@ -56,7 +57,7 @@ class Searcher(metaclass=Singleton):
                 print('Try to assign index with length {} to data with length {}'.format(
                     index.shape[0], data.shape[0]))
             else:
-                self.max_index += index.shape[0]
+                # self.max_index += index.shape[0]
                 self.p.add_items(data, index)
         except Exception as err:
             # TODO: Logging here
@@ -86,8 +87,8 @@ class Searcher(metaclass=Singleton):
         index = np.array(index)
         self.add_products(data, index)
 
-    def save_graph(self):
-        print("Saving index to '%s'" % self.graph_path)
-        self.p.save_index(self.graph_path)
-        with open(self.index_path, 'w') as f:
-            f.write(str(self.max_index))
+    # def save_graph(self):
+    #     print("Saving index to '%s'" % self.graph_path)
+    #     self.p.save_index(self.graph_path)
+    #     with open(self.index_path, 'w') as f:
+    #         f.write(str(self.max_index))

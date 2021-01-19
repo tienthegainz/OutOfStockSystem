@@ -25,5 +25,6 @@ DETECTOR = {
 
 TRACKER = {
     # x, y, h, w
-    'roi': [144, 250, 432, 330]
+    'roi': [144, 250, 432, 330],
+    'no_bbox_thres': 5,
 }
