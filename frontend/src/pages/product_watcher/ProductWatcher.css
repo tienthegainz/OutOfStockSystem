@@ -56,12 +56,11 @@
 }
 
 .content .main .left {
-  align-items: center;
-  justify-content: center;
   margin: 10px;
   width: 1080px;
   height: 720px;
-  border: 1px solid #1890ff;
+  border: 2px solid #1890ff;
+  position: relative;
 }
 
 .content .main .firebox {

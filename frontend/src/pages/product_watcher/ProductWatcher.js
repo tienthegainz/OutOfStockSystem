@@ -3,6 +3,7 @@ import socketIOClient from "socket.io-client";
 import './ProductWatcher.css';
 import { Menu, Dropdown, Button } from 'antd';
 import { DownOutlined, VideoCameraOutlined } from '@ant-design/icons';
+import CameraReadyModal from "../../components/CameraReadyModal/CameraReadyModal";
 
 const ENDPOINT = "http://0.0.0.0:5001"
 // const axios = require('axios');
@@ -10,7 +11,7 @@ const ENDPOINT = "http://0.0.0.0:5001"
 
 const ProductWatcher = () => {
   const [image, setImage] = useState("");
-  const [logs, setLogs] = useState(["Object out of ROI. Saving image"]);
+  const [logs, setLogs] = useState([]);
   const [logCounter, setLogCounter] = useState(0);
   const [ready, setReady] = useState(false);
   const [fire, setFire] = useState(false);
@@ -81,10 +82,11 @@ const ProductWatcher = () => {
         </Dropdown>
       </div>
       <h1 className="title">Product watcher</h1>
-      {ready ? null : <p className="ready"><i className="fa fa-refresh fa-spin" /> Detecting</p>}
+      {/* {ready ? null : <CameraReadyModal />} */}
       {fire ? <div className="fire"><p>Warning!!!!<br />There may be fire</p></div> : null}
       <div className="main" >
         <div className={fire ? "left firebox" : "left"} >
+          {ready ? null : <CameraReadyModal />}
           {image === "" ? null : <img src={image} className="image" alt="Img" />}
         </div>
         <div className="right">
