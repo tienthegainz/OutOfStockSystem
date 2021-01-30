@@ -95,7 +95,10 @@ class TrackerMulti(metaclass=Singleton):
                     else:
                         print('Add new object\'s position with ID: {}'.format(
                             state['id']))
-                        state['is_out'] = False
+                        bbox = state['bbox']
+                        center = (int(bbox[0] + bbox[2]/2),
+                                  int(bbox[1] + bbox[3]/2))
+                        state['is_out'] = self.check_outside(center)
                         self.objs.append(state)
             else:
                 self.objs = [{**state, 'is_out': False} for state in states]
@@ -130,7 +133,7 @@ class TrackerMulti(metaclass=Singleton):
         frame = self.draw_bbox(frame)
         return frame
 
-    def check_outside(self):
+    def check_out_roi(self):
         """
             Check if object is out of ROI
         """
@@ -138,11 +141,8 @@ class TrackerMulti(metaclass=Singleton):
         out = False
         for idx, obj in enumerate(self.objs):
             bbox = obj['bbox']
-            obj_center = (int(bbox[0] + bbox[2]/2), int(bbox[1] + bbox[3]/2))
-            if obj_center[0] < int(self.config['roi'][0]) or \
-                    obj_center[0] > int(self.config['roi'][0] + self.config['roi'][2]) or \
-                    obj_center[1] < int(self.config['roi'][1]) or \
-                    obj_center[1] > int(self.config['roi'][1] + self.config['roi'][3]):
+            center = (int(bbox[0] + bbox[2]/2), int(bbox[1] + bbox[3]/2))
+            if self.check_outside(center):
                 if not obj['is_out']:
                     self.objs[idx]['is_out'] = True
                     out = True
@@ -150,6 +150,18 @@ class TrackerMulti(metaclass=Singleton):
                 self.objs[idx]['is_out'] = False
 
         return out
+
+    def check_outside(self, center):
+        return (center[0] < int(self.config['roi'][0]) or
+                center[0] > int(self.config['roi'][0] + self.config['roi'][2]) or
+                center[1] < int(self.config['roi'][1]) or
+                center[1] > int(self.config['roi'][1] + self.config['roi'][3]))
+
+    def clear_objects(self, ids):
+        self.objs = [obj for obj in self.objs if obj['id'] not in ids]
+
+    def clear_all_objects(self):
+        self.objs = []
 
 
 if __name__ == "__main__":

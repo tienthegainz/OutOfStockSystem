@@ -1,10 +1,13 @@
 .content {
   width: 92%;
   margin-left: 8%;
+  position: relative;
 }
 
 .content .select-camera {
-  position: fixed;
+  position: absolute;
+  top: 20px;
+  left: 10px;
 }
 
 .content .title {

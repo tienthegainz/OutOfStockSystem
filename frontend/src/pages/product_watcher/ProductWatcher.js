@@ -72,6 +72,10 @@ const ProductWatcher = () => {
     return () => socket.disconnect();
   }, []);
 
+  useEffect(() => {
+    console.log('ready: ', ready);
+  }, [ready])
+
   return (
     <div className="content">
       <div className="select-camera">
