@@ -78,7 +78,7 @@ class ProductImageModel():
         CREATE TABLE product_image ( 
             id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, 
             path VARCHAR NOT NULL, 
-            product_id INTEGER NOT NULL, 
+            product_id INTEGER NOT NULL,
             FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE, 
         )
     """
@@ -102,7 +102,8 @@ class ProductModel():
         CREATE TABLE products ( 
             id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, 
             name VARCHAR NOT NULL, 
-            price INTEGER NOT NULL, 
+            price INTEGER NOT NULL,
+            path VARCHAR NOT NULL, 
         )
     """
 
@@ -110,9 +111,10 @@ class ProductModel():
         self.id = int(value[0])
         self.name = value[1]
         self.price = int(value[2])
+        self.image = value[3]
 
     def __repr__(self):
-        return "<Product(id = '%d', name='%s', price='%f')>" % (self.id, self.name, self.price)
+        return "<Product(id = '%d', name='%s', price='%f', image='%s')>" % (self.id, self.name, self.price, self.image)
 
     def dict(self):
         return {'id': self.id, 'name': self.name, 'price': self.price}
