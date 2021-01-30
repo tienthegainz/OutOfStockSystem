@@ -55,18 +55,22 @@ def random_name_generator(size=6, chars=string.ascii_lowercase + string.digits):
 
 
 def search_product(data):
+    # Search products name by image
     try:
         products = []
         for prod in data:
             pil_prod = Image.fromarray(prod.astype('uint8'), 'RGB')
             feature = extractor.extract(pil_prod)
             index = searcher.query_products(feature)
-            image_info = database.get(sql="SELECT * FROM product_image WHERE id = ?", ENTITY=ProductImageModel,
-                                      value=(index, ), limit=1)
-            product = database.get(sql="SELECT * FROM products WHERE id = ?", ENTITY=ProductModel,
-                                   value=(image_info.product_id, ), limit=1)
-            products.append(str(product))
-
+            if index is not None:
+                image_info = database.get(sql="SELECT * FROM product_image WHERE id = ?", ENTITY=ProductImageModel,
+                                          value=(index, ), limit=1)
+                print(image_info)
+                product = database.get(sql="SELECT * FROM products WHERE id = ?", ENTITY=ProductModel,
+                                       value=(image_info.product_id, ), limit=1)
+                products.append(str(product.name))
+            else:
+                products.append(None)
         return products
     except Exception as e:
         traceback.print_exc()
@@ -74,12 +78,15 @@ def search_product(data):
 
 
 def detect_search_object(image):
+    # Detect candidate object => check what object it is
     data = detector.predict(image)
 
     if data['products']:
         products = search_product(data['products'])
-        info = [{'id': random_name_generator(), 'bbox': bbox}
-                for bbox in data['bboxes']]
+        bboxes = data['bboxes']
+        info = [{'id': random_name_generator(), 'bbox': bboxes[i]}
+                for i in range(len(products)) if products[i] is not None]
+        products = [product for product in products if product is not None]
         tracker.update(data['image'], info)
         draw_img = tracker.draw()
         result_image = Image.fromarray(draw_img.astype(np.uint8))
@@ -100,15 +107,13 @@ def track_image(data, info):
     image_data = base64.b64decode(data)
     image = Image.open(io.BytesIO(image_data))
     np_image = np.array(image)
-    # print('Info: ', info)
-    # If object is lost tracking too long
     update_ok = False
     if info != None:
         update_ok = tracker.update(np_image, info)
     else:
         update_ok = tracker.update(np_image)
     draw_img = tracker.draw()
-    if tracker.check_outside() or not update_ok:
+    if tracker.check_out_roi() or not update_ok:
         save_image.delay(data)
 
     result_image = Image.fromarray(draw_img.astype(np.uint8))
@@ -152,16 +157,16 @@ def save_image(data):
 @socketio.on('camera')
 def socket_camera(data):
     global count
-    if count == 0:
+    if count % 50 == 0:
         socketio.emit('ready', {'ready': True})
     try:
         count += 1
         image_data = base64.b64decode(data['image'])
         image = Image.open(io.BytesIO(image_data))
 
-        # if count % 50 == 0:
-        #     print('Fire detection running ...')
-        #     fire_alert.delay(data['image'])
+        if count % 50 == 0:
+            print('Fire detection running ...')
+            fire_alert.delay(data['image'])
 
         info = data['info'] if 'info' in data else None
 
@@ -179,14 +184,18 @@ def hello():
 
 @app.route('/product/detect', methods=['POST'])
 def watch_product():
+    # signal FE to wait
     socketio.emit('ready', {'ready': False})
+    # clear tracker
+    tracker.clear_all_objects()
+    # processing
     image_data = request.files['image'].read()
     image = Image.open(io.BytesIO(image_data))
     result_image, products, info = detect_search_object(image)
 
-    for product in products:
-        socketio.emit('log', {'log': product}, broadcast=True)
-
+    socketio.emit('log',
+                  {'log': 'Detected product: {}'.format(', '.join(products))},
+                  broadcast=True)
     socketio.emit('image', {'image': result_image}, broadcast=True)
 
     return jsonify({'success': True, 'info': info})
