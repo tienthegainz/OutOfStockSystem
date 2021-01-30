@@ -18,30 +18,38 @@ if __name__ == '__main__':
     with SocketIO(socket_url, 5001, LoggingNamespace) as socketIO:
         with picamera.PiCamera() as camera:
             # config
-            camera.framerate = 30
+            camera.framerate = 15
             print('Resolution: {}\nFramerate: {}\n'.format(
                 camera.resolution, camera.framerate))
-            tracker = None
-            time.sleep(0.1)
+            time.sleep(1)
             stream = io.BytesIO()
             is_tracked = False
             count = 0
             states = []
+            multiTracker = None
 
             for _ in camera.capture_continuous(stream, 'jpeg', use_video_port=True):
-                if count % 300 == 0:
-                    tracker = cv2.TrackerKCF_create()
+                if count % 50 == 0:
+                    multiTracker = cv2.MultiTracker_create()
+                    # tracker = cv2.TrackerKCF_create()
                     files = {"image": stream.getvalue()}
                     respond = requests.post(post_url, files=files, timeout=4)
                     data = np.frombuffer(stream.getvalue(), dtype=np.uint8)
                     image = cv2.imdecode(data, 1)
                     image = image[:, :, ::-1]
                     data = respond.json()
+                    print(data)
                     if data['info'] != None:
-                        tracker.init(image, tuple(data['info'][0]['bbox']))
-                        states.append(data['info'][0])
-                        print('Init done')
+                        # tracker.init(image, tuple(data['info'][0]['bbox']))
+                        states = data['info']
+                        print('Init done: {}'.format(states))
                         is_tracked = True
+                        # assign tracker
+                        for state in states:
+                            bbox = tuple(state['bbox'])
+                            multiTracker.add(
+                                cv2.TrackerKCF_create(), image, bbox)
+
                     else:
                         print('No object detected')
                         is_tracked = False
@@ -54,12 +62,16 @@ if __name__ == '__main__':
                                 stream.getvalue(), dtype=np.uint8)
                             image = cv2.imdecode(data, 1)
                             image = image[:, :, ::-1]
-                            (success, box) = tracker.update(image)
+                            # (success, box) = tracker.update(image)
+                            # if success:
+                            #     bbox = [int(v) for v in box]
+                            #     print("Bbox: {}".format(bbox))
+                            #     states[0]['bbox'] = bbox
+                            success, boxes = multiTracker.update(image)
                             if success:
-                                bbox = [int(v) for v in box]
-                                print("Bbox: {}".format(bbox))
-                                states[0]['bbox'] = bbox
-
+                                for i, bbox in enumerate(boxes):
+                                    states[i]['bbox'] = [int(v) for v in bbox]
+                            print(states)
                         socketIO.emit(
                             'camera', {
                                 "image": base64_image,
