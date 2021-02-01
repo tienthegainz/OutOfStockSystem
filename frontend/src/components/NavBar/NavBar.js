@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Menu } from 'antd';
-import { EyeOutlined, FolderViewOutlined } from '@ant-design/icons';
+import { EyeOutlined, FolderViewOutlined, VideoCameraAddOutlined } from '@ant-design/icons';
 import { useLocation, Link } from "react-router-dom";
 import './NavBar.css';
 
@@ -8,12 +8,17 @@ import './NavBar.css';
 const NavBar = (props) => {
 
   const location = useLocation();
+  const activeKeys = [
+    { url: '/', key: '1' },
+    { url: '/image', key: '2' },
+    { url: '/camera', key: '3' },
+  ];
 
   return (
     <div className="nav-bar">
       <h2>Menu</h2>
       <Menu
-        selectedKeys={location.pathname === '/image' ? ['2'] : ['1']}
+        selectedKeys={activeKeys.find(e => e.url === location.pathname).key}
         theme='light'
       >
         <Menu.Item key="1" icon={<EyeOutlined />}>
@@ -21,6 +26,9 @@ const NavBar = (props) => {
         </Menu.Item>
         <Menu.Item key="2" icon={<FolderViewOutlined />}>
           <Link to="/image">Image Log</Link>
+        </Menu.Item>
+        <Menu.Item key="3" icon={<VideoCameraAddOutlined />}>
+          <Link to="/camera">Camera</Link>
         </Menu.Item>
       </Menu>
     </div>

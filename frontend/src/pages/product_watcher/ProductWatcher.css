@@ -1,20 +1,8 @@
-.content {
-  width: 92%;
-  margin-left: 8%;
-  position: relative;
-}
-
 .content .select-camera {
   position: absolute;
   top: 20px;
-  left: 10px;
 }
 
-.content .title {
-  text-align: center;
-  color: #1890ff;
-  font-size: 40px;
-}
 
 .content .ready {
   text-align: center;
@@ -59,7 +47,6 @@
 }
 
 .content .main .left {
-  margin: 10px;
   width: 1080px;
   height: 720px;
   border: 2px solid #1890ff;
@@ -79,7 +66,7 @@
 .content .main .right {
   width: calc(100% - 1080px);
   height: 720px;
-  margin: 10px;
+  margin-left: 10px;
   background-color: #000000;
   overflow: scroll;
 }

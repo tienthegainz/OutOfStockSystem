@@ -9,7 +9,7 @@ const ENDPOINT = "http://0.0.0.0:5001"
 // const axios = require('axios');
 
 
-const ProductWatcher = () => {
+const ProductWatcherPage = () => {
   const [image, setImage] = useState("");
   const [logs, setLogs] = useState([]);
   const [logCounter, setLogCounter] = useState(0);
@@ -72,10 +72,6 @@ const ProductWatcher = () => {
     return () => socket.disconnect();
   }, []);
 
-  useEffect(() => {
-    console.log('ready: ', ready);
-  }, [ready])
-
   return (
     <div className="content">
       <div className="select-camera">
@@ -85,7 +81,7 @@ const ProductWatcher = () => {
           </Button>
         </Dropdown>
       </div>
-      <h1 className="title">Product watcher</h1>
+      <h1>Product watcher</h1>
       {/* {ready ? null : <CameraReadyModal />} */}
       {fire ? <div className="fire"><p>Warning!!!!<br />There may be fire</p></div> : null}
       <div className="main" >
@@ -101,4 +97,4 @@ const ProductWatcher = () => {
   );
 }
 
-export default ProductWatcher;
+export default ProductWatcherPage;

@@ -3,7 +3,7 @@ import './ImageLog.css';
 import ImageCard from '../../components/ImageCard/ImageCard';
 import axios from 'axios';
 
-const ImageLog = () => {
+const ImageLogPage = () => {
 
   const [images, setImages] = useState([[]]);
 
@@ -49,4 +49,4 @@ const ImageLog = () => {
   );
 }
 
-export default ImageLog;
+export default ImageLogPage;
