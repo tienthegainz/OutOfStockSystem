@@ -11,7 +11,7 @@ p {
   font-style: italic;
 }
 
-img {
+.preview-img {
   max-width: 250px;
   max-height: 250px;
 }

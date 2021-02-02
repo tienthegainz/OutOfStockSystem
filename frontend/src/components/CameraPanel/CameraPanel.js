@@ -36,7 +36,7 @@ const CameraPanel = (props) => {
               <h3>Price:</h3>
               <p>{p.price} VND</p>
               <h3>Image:</h3>
-              <img src={p.img} alt="preview" />
+              <img className='preview-img' src={p.img} alt="preview" />
               {edit ? <Button
                 type="primary"
                 style={{
