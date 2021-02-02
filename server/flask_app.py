@@ -3,8 +3,7 @@ from detect_engine.detector import Detector
 from fire_engine.fire import FireAlarm
 from search_engine.searcher import Searcher
 from search_engine.extractor import Extractor
-from tracker_engine.tracker import Tracker, TrackerMulti
-# from daemon import fire_alert
+from tracker_engine.tracker import TrackerMulti
 from flask import Flask, jsonify, request
 from flask_socketio import SocketIO
 from flask_cors import CORS
@@ -68,7 +67,7 @@ def search_product(data):
                 print(image_info)
                 product = database.get(sql="SELECT * FROM products WHERE id = ?", ENTITY=ProductModel,
                                        value=(image_info.product_id, ), limit=1)
-                products.append(str(product.name))
+                products.append(product)
             else:
                 products.append(None)
         return products
@@ -80,27 +79,43 @@ def search_product(data):
 def detect_search_object(image):
     # Detect candidate object => check what object it is
     data = detector.predict(image)
-
     if data['products']:
         products = search_product(data['products'])
         bboxes = data['bboxes']
-        info = [{'id': random_name_generator(), 'bbox': bboxes[i]}
+        info = [{'id': random_name_generator(), 'bbox': bboxes[i], 'product_id': products[i].id}
                 for i in range(len(products)) if products[i] is not None]
-        products = [product for product in products if product is not None]
+        # track image
         tracker.update(data['image'], info)
+        # draw object
         draw_img = tracker.draw()
         result_image = Image.fromarray(draw_img.astype(np.uint8))
         img_byte = io.BytesIO()
         result_image.save(img_byte, format='jpeg')
         base64_image = base64.b64encode(
             img_byte.getvalue()).decode('utf-8')
-        return base64_image, products, info
+        # count object
+        c = count_object(products)
+        return base64_image, info, c
     else:
         img_byte = io.BytesIO()
         image.save(img_byte, format='jpeg')
         base64_image = base64.b64encode(
             img_byte.getvalue()).decode('utf-8')
-        return base64_image, [], None
+        return base64_image, [], []
+
+
+def count_object(products):
+    result = []
+    pid = []
+    for product in products:
+        if product.id not in pid:
+            pid.append(product.id)
+            result.append(
+                {'id': product.id, 'name': product.name, 'quantity': 1})
+        else:
+            a = pid.index(product.id)
+            result[a]['quantity'] += 1
+    return result
 
 
 def track_image(data, info):
@@ -134,6 +149,10 @@ def fire_alert(data):
         image = Image.open(io.BytesIO(image_data))
         result = fire_alarm.check_fire(image)
         socketio.emit('fire', {'fire': result})
+        if result:
+            t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            socketio.emit(
+                'log', {'log': '[{}] Fire warning'.format(t)})
 
 
 @celery.task(ignore_result=True)
@@ -142,7 +161,9 @@ def save_image(data):
                         message_queue='redis://')
     print('Saving image...')
     with app.app_context():
-        socketio.emit('log', {'log': 'Object is out of ROI. Saving image...'})
+        t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        socketio.emit(
+            'log', {'log': '[{}] Object is out of ROI. Saving image...'.format(t)})
 
     send_image = io.BytesIO(
         base64.b64decode(re.sub("data:image/jpeg;base64", '', data)))
@@ -191,10 +212,13 @@ def watch_product():
     # processing
     image_data = request.files['image'].read()
     image = Image.open(io.BytesIO(image_data))
-    result_image, products, info = detect_search_object(image)
-
+    result_image, info, count = detect_search_object(image)
+    # logging
+    logs = ['{}: {}'.format(c['name'], c['quantity']) for c in count]
+    t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     socketio.emit('log',
-                  {'log': 'Detected product: {}'.format(', '.join(products))},
+                  {'log': '[{}] Detected product: {}'.format(
+                      t, ', '.join(logs))},
                   broadcast=True)
     socketio.emit('image', {'image': result_image}, broadcast=True)
 
