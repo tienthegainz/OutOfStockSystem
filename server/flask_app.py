@@ -5,7 +5,7 @@ from search_engine.searcher import Searcher
 from search_engine.extractor import Extractor
 from tracker_engine.tracker import TrackerMulti
 from flask import Flask, jsonify, request
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, join_room, leave_room, emit, send
 from flask_cors import CORS
 from PIL import Image
 from celery import Celery
@@ -29,8 +29,8 @@ app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379'
 
 CORS(app)
 
-socketio = SocketIO(app, cors_allowed_origins="*", message_queue='redis://')
-# socketio = SocketIO(app, cors_allowed_origins="*")
+# socketio = SocketIO(app, cors_allowed_origins="*", message_queue='redis://')
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 celery = Celery(
     app.name, broker=app.config['CELERY_BROKER_URL'],
@@ -47,6 +47,9 @@ firebase_app = pyrebase.initialize_app(FIREBASE_CONFIG)
 firebase_storage = firebase_app.storage()
 
 count = 0
+cameras = []
+
+######################## Utility function ########################
 
 
 def random_name_generator(size=6, chars=string.ascii_lowercase + string.digits):
@@ -138,6 +141,8 @@ def track_image(data, info):
         img_byte.getvalue()).decode('utf-8')
     return base64_image
 
+######################## Celery background task ########################
+
 
 @celery.task(ignore_result=True)
 def fire_alert(data):
@@ -175,8 +180,9 @@ def save_image(data):
     database.insert('INSERT INTO log_image(url, time) VALUES(?,?)', (url, t))
 
 
+######################## Socket handler ########################
 @socketio.on('camera')
-def socket_camera(data):
+def on_send_image(data):
     global count
     if count % 50 == 0:
         socketio.emit('ready', {'ready': True})
@@ -198,9 +204,18 @@ def socket_camera(data):
         print(err)
 
 
-@app.route('/hello', methods=['GET'])
-def hello():
-    return jsonify({'message': 'hello', 'legit': detector.test()})
+@socketio.on('join')
+def on_join(data):
+    room = data['room']
+    join_room(room)
+
+
+@socketio.on('leave')
+def on_leave(data):
+    room = data['room']
+    leave_room(room)
+
+######################## Products API ########################
 
 
 @app.route('/product/detect', methods=['POST'])
@@ -232,6 +247,36 @@ def get_all_image_log():
     json_images = [image.dict() for image in images]
     return jsonify({'success': True, 'data': json_images})
 
+######################## Camera API ########################
+
+
+@app.route('/camera', methods=['POST'])
+def add_camera():
+    global cameras
+    camera_info = request.get_json()
+    print(camera_info)
+    duplicate = False
+    for camera in cameras:
+        if camera_info['id'] == camera['id']:
+            duplicate = True
+            break
+    if not duplicate:
+        print('Sending...')
+        cameras.append(camera_info)
+        print(cameras)
+        socketio.emit('camera_list', {'cameras': cameras})
+    return jsonify({'success': True})
+
+
+@app.route('/camera', methods=['GET'])
+def get_camera():
+    global cameras
+    return jsonify({'success': True, 'cameras': cameras})
+
+######################## User API ########################
+
+##########################################################
+
 
 if __name__ == '__main__':
     # app.run(host='0.0.0.0', port='5001', debug=True, use_reloader=False)
@@ -241,7 +286,6 @@ if __name__ == '__main__':
     detector = Detector()
     extractor = Extractor()
     searcher = Searcher()
-    # tracker = Tracker()
     tracker = TrackerMulti()
     socketio.run(app, host='0.0.0.0', port='5001',
                  debug=True, use_reloader=False)
