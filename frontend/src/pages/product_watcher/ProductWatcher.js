@@ -4,9 +4,10 @@ import './ProductWatcher.css';
 import { Menu, Dropdown, Button } from 'antd';
 import { DownOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import CameraReadyModal from "../../components/CameraReadyModal/CameraReadyModal";
+import axios from 'axios'
+import { serverApi } from "../../common/serverApi";
 
 const ENDPOINT = "http://0.0.0.0:5001"
-// const axios = require('axios');
 
 
 const ProductWatcherPage = () => {
@@ -15,6 +16,8 @@ const ProductWatcherPage = () => {
   const [logCounter, setLogCounter] = useState(0);
   const [ready, setReady] = useState(false);
   const [fire, setFire] = useState(false);
+  const [cameraList, setCameraList] = useState([]);
+  const [camera, setCamera] = useState();
 
   const cameraMenu = (
     <Menu >
@@ -25,6 +28,7 @@ const ProductWatcherPage = () => {
   );
 
   useEffect(() => {
+    // handle CCTV image
     const socket = socketIOClient(ENDPOINT);
     socket.on('image', data => {
       let byteArray = data.image;
@@ -37,6 +41,7 @@ const ProductWatcherPage = () => {
   }, []);
 
   useEffect(() => {
+    // handle CCTV log
     const socket = socketIOClient(ENDPOINT);
     socket.on('log', data => {
       let new_logs = [...logs];
@@ -52,6 +57,7 @@ const ProductWatcherPage = () => {
   }, [logCounter, logs]);
 
   useEffect(() => {
+    // handle image is sending effect
     const socket = socketIOClient(ENDPOINT);
     socket.on('ready', data => {
       setReady(data.ready);
@@ -62,6 +68,7 @@ const ProductWatcherPage = () => {
   }, []);
 
   useEffect(() => {
+    // handle fire warning
     const socket = socketIOClient(ENDPOINT);
     socket.on('fire', data => {
       console.log(data.fire);
@@ -72,12 +79,49 @@ const ProductWatcherPage = () => {
     return () => socket.disconnect();
   }, []);
 
+  useEffect(() => {
+    // handle camera list
+    const getAllCamera = async () => {
+      let result = await serverApi({ url: '/camera' });
+      if (!result.error) {
+        // console.log(result);
+        setCameraList(result.data.cameras)
+      }
+    }
+    getAllCamera();
+
+    const socket = socketIOClient(ENDPOINT);
+    socket.on('camera_list', data => {
+      console.log(data);
+      setCameraList(data.cameras);
+    });
+
+    // CLEAN UP THE EFFECT
+    return () => socket.disconnect();
+  }, []);
+
   return (
     <div className="content">
       <div className="select-camera">
-        <Dropdown overlay={cameraMenu}>
+        <Dropdown
+          overlay={(
+            <Menu >
+              {cameraList.map(cam => <Menu.Item
+                key={cam.id}
+                icon={<VideoCameraOutlined />}
+                onClick={() => {
+                  console.log('Select: ', cam);
+                  setCamera(cam);
+                }}
+              >
+                {cam.name}
+              </Menu.Item>)}
+            </Menu>
+          )}
+          trigger={['click']}
+        >
           <Button>
-            Camera 1 <DownOutlined />
+            {camera ? camera.name : "Select camera"} <DownOutlined />
           </Button>
         </Dropdown>
       </div>
