@@ -18,18 +18,13 @@ const ProductWatcherPage = () => {
   const [fire, setFire] = useState(false);
   const [cameraList, setCameraList] = useState([]);
   const [camera, setCamera] = useState();
-
-  const cameraMenu = (
-    <Menu >
-      <Menu.Item key="1" icon={<VideoCameraOutlined />}>
-        Camera 1
-      </Menu.Item>
-    </Menu>
-  );
+  // const [socket, setSocket] = useState();
 
   useEffect(() => {
     // handle CCTV image
     const socket = socketIOClient(ENDPOINT);
+    if (camera)
+      socket.emit('join', { id: camera.id });
     socket.on('image', data => {
       let byteArray = data.image;
       let img = 'data:image/png;base64,' + byteArray
@@ -37,12 +32,15 @@ const ProductWatcherPage = () => {
     });
 
     // CLEAN UP THE EFFECT
-    return () => socket.disconnect();
-  }, []);
+    if (socket)
+      return () => socket.disconnect();
+  }, [camera]);
 
   useEffect(() => {
     // handle CCTV log
     const socket = socketIOClient(ENDPOINT);
+    if (camera)
+      socket.emit('join', { id: camera.id });
     socket.on('log', data => {
       let new_logs = [...logs];
       console.log(new_logs);
@@ -53,34 +51,40 @@ const ProductWatcherPage = () => {
     });
 
     // CLEAN UP THE EFFECT
-    return () => socket.disconnect();
-  }, [logCounter, logs]);
+    if (socket)
+      return () => socket.disconnect();
+  }, [logCounter, logs, camera]);
 
   useEffect(() => {
     // handle image is sending effect
     const socket = socketIOClient(ENDPOINT);
+    if (camera)
+      socket.emit('join', { id: camera.id });
     socket.on('ready', data => {
       setReady(data.ready);
     });
 
     // CLEAN UP THE EFFECT
-    return () => socket.disconnect();
-  }, []);
+    if (socket)
+      return () => socket.disconnect();
+  }, [camera]);
 
   useEffect(() => {
     // handle fire warning
     const socket = socketIOClient(ENDPOINT);
+    if (camera)
+      socket.emit('join', { id: camera.id });
     socket.on('fire', data => {
       console.log(data.fire);
       setFire(data.fire);
     });
 
     // CLEAN UP THE EFFECT
-    return () => socket.disconnect();
-  }, []);
+    if (socket)
+      return () => socket.disconnect();
+  }, [camera]);
 
   useEffect(() => {
-    // handle camera list
     const getAllCamera = async () => {
       let result = await serverApi({ url: '/camera' });
       if (!result.error) {
@@ -89,15 +93,15 @@ const ProductWatcherPage = () => {
       }
     }
     getAllCamera();
-
-    const socket = socketIOClient(ENDPOINT);
-    socket.on('camera_list', data => {
+    const camera_socket = socketIOClient(ENDPOINT);
+    camera_socket.on('camera_list', data => {
       console.log(data);
       setCameraList(data.cameras);
     });
 
     // CLEAN UP THE EFFECT
-    return () => socket.disconnect();
+    if (camera_socket)
+      return () => camera_socket.disconnect();
   }, []);
 
   return (
@@ -109,9 +113,10 @@ const ProductWatcherPage = () => {
               {cameraList.map(cam => <Menu.Item
                 key={cam.id}
                 icon={<VideoCameraOutlined />}
-                onClick={() => {
+                onClick={async () => {
                   console.log('Select: ', cam);
                   setCamera(cam);
+                  setReady(true);
                 }}
               >
                 {cam.name}

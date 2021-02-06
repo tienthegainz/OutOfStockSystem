@@ -44,6 +44,6 @@ export const serverApi = async ({ url, method = 'get', data = null }) => {
     return result;
   }
   catch (err) {
-    return { error: err.response.status };
+    return { error: true };
   }
 }
