@@ -29,8 +29,8 @@ app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379'
 
 CORS(app)
 
-# socketio = SocketIO(app, cors_allowed_origins="*", message_queue='redis://')
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", message_queue='redis://')
+# socketio = SocketIO(app, cors_allowed_origins="*")
 
 celery = Celery(
     app.name, broker=app.config['CELERY_BROKER_URL'],
@@ -121,7 +121,7 @@ def count_object(products):
     return result
 
 
-def track_image(data, info):
+def track_image(data, info, room):
     image_data = base64.b64decode(data)
     image = Image.open(io.BytesIO(image_data))
     np_image = np.array(image)
@@ -132,7 +132,7 @@ def track_image(data, info):
         update_ok = tracker.update(np_image)
     draw_img = tracker.draw()
     if tracker.check_out_roi() or not update_ok:
-        save_image.delay(data)
+        save_image.delay(data, room)
 
     result_image = Image.fromarray(draw_img.astype(np.uint8))
     img_byte = io.BytesIO()
@@ -161,35 +161,33 @@ def fire_alert(data):
 
 
 @celery.task(ignore_result=True)
-def save_image(data):
+def save_image(data, room):
     socketio = SocketIO(app, cors_allowed_origins="*",
                         message_queue='redis://')
     print('Saving image...')
     with app.app_context():
         t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         socketio.emit(
-            'log', {'log': '[{}] Object is out of ROI. Saving image...'.format(t)})
+            'log', {'log': '[{}] Object is out of ROI. Saving image...'.format(t)}, room=room)
 
-    send_image = io.BytesIO(
-        base64.b64decode(re.sub("data:image/jpeg;base64", '', data)))
-    image_name = random_name_generator() + '.jpg'
-    firebase_storage.child(
-        "images/{}".format(image_name)).put(send_image)
-    url = firebase_storage.child("images/{}".format(image_name)).get_url(None)
-    t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    database.insert('INSERT INTO log_image(url, time) VALUES(?,?)', (url, t))
+    # send_image = io.BytesIO(
+    #     base64.b64decode(re.sub("data:image/jpeg;base64", '', data)))
+    # image_name = random_name_generator() + '.jpg'
+    # firebase_storage.child(
+    #     "images/{}".format(image_name)).put(send_image)
+    # url = firebase_storage.child("images/{}".format(image_name)).get_url(None)
+    # t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    # database.insert('INSERT INTO log_image(url, time) VALUES(?,?)', (url, t))
 
 
 ######################## Socket handler ########################
 @socketio.on('camera')
 def on_send_image(data):
     global count
-    if count % 50 == 0:
-        socketio.emit('ready', {'ready': True})
+    room = int(data['id'])
+    socketio.emit('ready', {'ready': True}, room=room)
     try:
         count += 1
-        image_data = base64.b64decode(data['image'])
-        image = Image.open(io.BytesIO(image_data))
 
         if count % 50 == 0:
             print('Fire detection running ...')
@@ -197,36 +195,41 @@ def on_send_image(data):
 
         info = data['info'] if 'info' in data else None
 
-        result_image = track_image(data['image'], info)
-
-        socketio.emit('image', {'image': result_image}, broadcast=True)
+        result_image = track_image(data['image'], info, room)
+        print('Sending data to room {}'.format(room))
+        socketio.emit('image', {'image': result_image},
+                      room=room, broadcast=True)
     except Exception as err:
         print(err)
 
 
 @socketio.on('join')
 def on_join(data):
-    room = data['room']
+    room = data['id']
     join_room(room)
+    print('Connected to room: {}'.format(room))
 
 
 @socketio.on('leave')
 def on_leave(data):
     room = data['room']
     leave_room(room)
+    print('Left room: {}'.format(room))
 
 ######################## Products API ########################
 
 
 @app.route('/product/detect', methods=['POST'])
 def watch_product():
+    request_data = request.get_json()
+    image_data = base64.b64decode(request_data['image'])
+    image = Image.open(io.BytesIO(image_data))
+    room = int(request_data['id'])
     # signal FE to wait
-    socketio.emit('ready', {'ready': False})
+    socketio.emit('ready', {'ready': False}, room=room, broadcast=True)
     # clear tracker
     tracker.clear_all_objects()
     # processing
-    image_data = request.files['image'].read()
-    image = Image.open(io.BytesIO(image_data))
     result_image, info, count = detect_search_object(image)
     # logging
     logs = ['{}: {}'.format(c['name'], c['quantity']) for c in count]
@@ -234,8 +237,9 @@ def watch_product():
     socketio.emit('log',
                   {'log': '[{}] Detected product: {}'.format(
                       t, ', '.join(logs))},
+                  room=room,
                   broadcast=True)
-    socketio.emit('image', {'image': result_image}, broadcast=True)
+    socketio.emit('image', {'image': result_image}, room=room, broadcast=True)
 
     return jsonify({'success': True, 'info': info})
 
@@ -254,7 +258,7 @@ def get_all_image_log():
 def add_camera():
     global cameras
     camera_info = request.get_json()
-    print(camera_info)
+    # print(camera_info)
     duplicate = False
     for camera in cameras:
         if camera_info['id'] == camera['id']:
@@ -263,8 +267,7 @@ def add_camera():
     if not duplicate:
         print('Sending...')
         cameras.append(camera_info)
-        print(cameras)
-        socketio.emit('camera_list', {'cameras': cameras})
+        socketio.emit('camera_list', {'cameras': cameras}, broadcast=True)
     return jsonify({'success': True})
 
 
@@ -275,11 +278,22 @@ def get_camera():
 
 ######################## User API ########################
 
+######################## Test API ########################
+
+
+@app.route('/room/test', methods=['POST'])
+def test_room():
+    data = request.get_json()
+    room = data['id']
+    print(type(room))
+    socketio.emit('log', {'log': 'Send data to client'},
+                  room=room, broadcast=True)
+    return jsonify({'success': True})
+
 ##########################################################
 
 
 if __name__ == '__main__':
-    # app.run(host='0.0.0.0', port='5001', debug=True, use_reloader=False)
     del fire_alarm
     del firebase_app
     del firebase_storage
