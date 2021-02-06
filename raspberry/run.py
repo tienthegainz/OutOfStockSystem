@@ -10,11 +10,19 @@ from threading import Thread
 import json
 
 socket_url = 'http://10.42.0.1'
-post_url = 'http://10.42.0.1:5001/product/detect'
+post_url = 'http://10.42.0.1:5001'
 
 
 if __name__ == '__main__':
-
+    camera_info = {
+        "id": 1,
+        "name": "Line 1 Row A"
+    }
+    # Notify server about camera
+    respond = requests.post(
+        '{}/camera'.format(post_url), json=camera_info, timeout=4)
+    print('Register camera with id: {} <== {}'.format(
+        camera_info['id'], respond.json()))
     with SocketIO(socket_url, 5001, LoggingNamespace) as socketIO:
         with picamera.PiCamera() as camera:
             # config
@@ -27,20 +35,23 @@ if __name__ == '__main__':
             count = 0
             states = []
             multiTracker = None
-
+            # Notify server about camera
             for _ in camera.capture_continuous(stream, 'jpeg', use_video_port=True):
                 if count % 50 == 0:
+                    # POST image to server for detecting
                     multiTracker = cv2.MultiTracker_create()
-                    # tracker = cv2.TrackerKCF_create()
-                    files = {"image": stream.getvalue()}
-                    respond = requests.post(post_url, files=files, timeout=4)
+                    base64_image = b64encode(stream.getvalue()).decode('utf-8')
+                    respond = requests.post(
+                        '{}/product/detect'.format(post_url), json={
+                            'id': camera_info['id'],
+                            "image": base64_image
+                        }, timeout=4)
                     data = np.frombuffer(stream.getvalue(), dtype=np.uint8)
                     image = cv2.imdecode(data, 1)
                     image = image[:, :, ::-1]
                     data = respond.json()
                     print(data)
                     if data['info'] != None:
-                        # tracker.init(image, tuple(data['info'][0]['bbox']))
                         states = data['info']
                         print('Init done: {}'.format(states))
                         is_tracked = True
@@ -74,12 +85,16 @@ if __name__ == '__main__':
                             print(states)
                         socketIO.emit(
                             'camera', {
+                                "id": camera_info['id'],
                                 "image": base64_image,
                                 "info": states
                             })
                     else:
                         socketIO.emit(
-                            'camera', {"image": base64_image})
+                            'camera', {
+                                "id": camera_info['id'],
+                                "image": base64_image
+                            })
 
                     print('sending image after {}'.format(time.time()-t))
 
