@@ -128,6 +128,7 @@ class LogImageModel():
             id INTEGER  PRIMARY KEY AUTOINCREMENT UNIQUE, 
             url TEXT NOT NULL, 
             time TEXT NOT NULL, 
+            camera_id INTEGER NOT NULL
         )
     """
 
@@ -135,23 +136,35 @@ class LogImageModel():
         self.id = int(value[0])
         self.url = value[1]
         self.time = value[2]
+        self.camera_id = int(value[3])
 
     def __repr__(self):
-        return "<LogImage(id = '%d', url='%s', time='%f')>" % (self.id, self.url, self.time)
+        return "<LogImage(id = '%d', url='%s', time='%s', camera_id='%d')>" % (self.id, self.url, self.time, self.camera_id)
 
     def dict(self):
-        return {'id': self.id, 'url': self.url, 'time': self.time}
+        return {'id': self.id, 'url': self.url, 'time': self.time, 'camera_id': self.camera_id}
 
 
-if __name__ == "__main__":
-    db = Database()
+class LogTextModel():
 
-    # result1 = db.get(sql="SELECT * FROM images", ENTITY=ImageModel)
-    # print(result1)
+    drop_table_sql = "DROP TABLE log_text;"
+    create_table_sql = """
+        CREATE TABLE log_text ( 
+            id INTEGER  PRIMARY KEY AUTOINCREMENT UNIQUE, 
+            camera_id INTEGER NOT NULL, 
+            time TEXT NOT NULL, 
+            message TEXT NOT NULL
+        )
+    """
 
-    # result2 = db.get(sql="SELECT * FROM images", ENTITY=ImageModel, limit=1)
-    # print(result2)
+    def __init__(self, value):
+        self.id = int(value[0])
+        self.camera_id = int(value[1])
+        self.time = value[2]
+        self.message = value[3]
 
-    result3 = db.get(sql="SELECT * FROM images WHERE id = ?", ENTITY=ImageModel,
-                     value=(20, ), limit=1)
-    print(result3)
+    def __repr__(self):
+        return "<LogText(id = '%d', camera_id='%d', time='%s', message='%s')>" % (self.id, self.camera_id, self.time, self.message)
+
+    def dict(self):
+        return {'id': self.id, 'camera_id': self.camera_id, 'time': self.time, 'message': self.message}

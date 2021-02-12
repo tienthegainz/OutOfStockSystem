@@ -1,7 +1,7 @@
 from re import search
 from search_engine.searcher import Searcher
 from search_engine.extractor import Extractor
-from db import Database, ProductImageModel, ProductModel, LogImageModel
+from db import Database, LogTextModel, ProductImageModel, ProductModel, LogImageModel
 import config
 import os
 import argparse
@@ -23,9 +23,11 @@ if __name__ == "__main__":
         database.run_sql(ProductModel.drop_table_sql)
         database.run_sql(ProductImageModel.drop_table_sql)
         database.run_sql(LogImageModel.drop_table_sql)
+        database.run_sql(LogTextModel.drop_table_sql)
         database.run_sql(ProductModel.create_table_sql)
         database.run_sql(ProductImageModel.create_table_sql)
         database.run_sql(LogImageModel.create_table_sql)
+        database.run_sql(LogTextModel.create_table_sql)
     if args.value:
         image_folder = os.path.join(
             config.STORAGE['path'], config.STORAGE['image'])
