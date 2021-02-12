@@ -1,4 +1,4 @@
-from db import Database, LogImageModel, ProductImageModel, ProductModel
+from db import Database, LogImageModel, LogTextModel, ProductImageModel, ProductModel
 from detect_engine.detector import Detector
 from fire_engine.fire import FireAlarm
 from search_engine.searcher import Searcher
@@ -42,9 +42,9 @@ searcher = None
 database = Database()
 detector = None
 tracker = None
-fire_alarm = FireAlarm()
-firebase_app = pyrebase.initialize_app(FIREBASE_CONFIG)
-firebase_storage = firebase_app.storage()
+# fire_alarm = FireAlarm()
+# firebase_app = pyrebase.initialize_app(FIREBASE_CONFIG)
+# firebase_storage = firebase_app.storage()
 
 count = 0
 cameras = []
@@ -243,14 +243,6 @@ def watch_product():
 
     return jsonify({'success': True, 'info': info})
 
-
-@app.route('/product/log', methods=['GET'])
-def get_all_image_log():
-    images = database.get(
-        "SELECT * FROM log_image ORDER BY id DESC", LogImageModel)
-    json_images = [image.dict() for image in images]
-    return jsonify({'success': True, 'data': json_images})
-
 ######################## Camera API ########################
 
 
@@ -278,6 +270,89 @@ def get_camera():
 
 ######################## User API ########################
 
+######################## Logger API ########################
+
+
+@app.route('/log/text', methods=['POST'])
+def get_all_log_text():
+    data = request.get_json()
+    limit = data['limit'] if 'limit' in data else 5
+    offset = (data['page'] - 1) * limit if 'page' in data else 0
+    from_date = data['from'] if 'from' in data else None
+    to_date = data['to'] if 'to' in data else None
+    texts = []
+    if from_date is None or to_date is None:
+        texts = database.get(
+            "SELECT * FROM log_text ORDER BY id DESC LIMIT ? OFFSET ?", LogTextModel, value=(limit, offset))
+    else:
+        texts = database.get(
+            "SELECT * FROM log_text WHERE time BETWEEN ? AND ? ORDER BY id DESC LIMIT ? OFFSET ?", LogTextModel, value=(from_date, to_date, limit, offset))
+    json_texts = [text.dict()
+                  for text in texts] if texts is not None else []
+    return jsonify({'success': True, 'data': json_texts})
+
+
+@app.route('/log/text/<id>', methods=['POST'])
+def get_log_text_by_id(id):
+    data = request.get_json()
+    limit = data['limit'] if 'limit' in data else 5
+    offset = (data['page'] - 1) * limit if 'page' in data else 0
+    from_date = data['from'] if 'from' in data else None
+    to_date = data['to'] if 'to' in data else None
+    texts = []
+    if from_date is None or to_date is None:
+        texts = database.get(
+            "SELECT * FROM log_text WHERE camera_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
+            LogTextModel, value=(id, limit, offset))
+    else:
+        texts = database.get(
+            "SELECT * FROM log_text WHERE time BETWEEN ? AND ? AND camera_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
+            LogTextModel, value=(from_date, to_date, id, limit, offset))
+    json_texts = [text.dict()
+                  for text in texts] if texts is not None else []
+    return jsonify({'success': True, 'data': json_texts})
+
+
+@app.route('/log/image', methods=['POST'])
+def get_all_log_image():
+    data = request.get_json()
+    limit = data['limit'] if 'limit' in data else 5
+    offset = (data['page'] - 1) * limit if 'page' in data else 0
+    from_date = data['from'] if 'from' in data else None
+    to_date = data['to'] if 'to' in data else None
+    images = []
+    if from_date is None or to_date is None:
+        images = database.get(
+            "SELECT * FROM log_image ORDER BY id DESC LIMIT ? OFFSET ?", LogImageModel, value=(limit, offset))
+    else:
+        images = database.get(
+            "SELECT * FROM log_image WHERE time BETWEEN ? AND ? ORDER BY id DESC LIMIT ? OFFSET ?", LogImageModel, value=(from_date, to_date, limit, offset))
+    json_images = [image.dict()
+                   for image in images] if images is not None else []
+    return jsonify({'success': True, 'data': json_images})
+
+
+@app.route('/log/image/<id>', methods=['POST'])
+def get_log_image_by_id(id):
+    data = request.get_json()
+    limit = data['limit'] if 'limit' in data else 5
+    offset = (data['page'] - 1) * limit if 'page' in data else 0
+    from_date = data['from'] if 'from' in data else None
+    to_date = data['to'] if 'to' in data else None
+    images = []
+    if from_date is None or to_date is None:
+        images = database.get(
+            "SELECT * FROM log_image WHERE camera_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
+            LogImageModel, value=(id, limit, offset))
+    else:
+        images = database.get(
+            "SELECT * FROM log_image WHERE time BETWEEN ? AND ? AND camera_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
+            LogImageModel, value=(from_date, to_date, id, limit, offset))
+    json_images = [image.dict()
+                   for image in images] if images is not None else []
+    return jsonify({'success': True, 'data': json_images})
+
+
 ######################## Test API ########################
 
 
@@ -290,16 +365,23 @@ def test_room():
                   room=room, broadcast=True)
     return jsonify({'success': True})
 
+
+@app.route('/param/test/<id>', methods=['GET'])
+def test_param(id=None):
+    limit = request.args.get('limit', default=5, type=int)
+    start = request.args.get('limit', default=1, type=int)
+    return jsonify({'success': True, 'result': id, 'start': start, 'limit': limit})
+
 ##########################################################
 
 
 if __name__ == '__main__':
-    del fire_alarm
-    del firebase_app
-    del firebase_storage
-    detector = Detector()
-    extractor = Extractor()
-    searcher = Searcher()
-    tracker = TrackerMulti()
+    # del fire_alarm
+    # del firebase_app
+    # del firebase_storage
+    # detector = Detector()
+    # extractor = Extractor()
+    # searcher = Searcher()
+    # tracker = TrackerMulti()
     socketio.run(app, host='0.0.0.0', port='5001',
                  debug=True, use_reloader=False)

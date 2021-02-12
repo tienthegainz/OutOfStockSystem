@@ -26,7 +26,7 @@ const ImageLogPage = () => {
           "Access-Control-Allow-Origin": "*"
         }
       });
-      const respond = await axiosObj.get('product/log');
+      const respond = await axiosObj.get('log/image');
       console.log(respond);
       if (respond.status === 200) {
         setImages(renderImage(respond.data.data));
