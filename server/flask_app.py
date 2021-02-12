@@ -332,6 +332,16 @@ def get_all_log_image():
     return jsonify({'success': True, 'data': json_images})
 
 
+@app.route('/log/image/count/<id>', methods=['GET'])
+def count_log_image_by_id(id):
+    sql = "SELECT COUNT(*) FROM log_image WHERE camera_id = ?"
+    cur = database.create_cursor()
+    cur.execute(sql, (id))
+    result = cur.fetchone()
+    total = result[0]
+    return jsonify({'success': True, 'total': total})
+
+
 @app.route('/log/image/<id>', methods=['POST'])
 def get_log_image_by_id(id):
     data = request.get_json()
