@@ -5,10 +5,10 @@ import {
   Route,
 } from "react-router-dom";
 import ProductWatcherPage from './pages/product_watcher/ProductWatcher';
-import ImageLogPage from './pages/image_log/ImageLog';
 import CameraPage from './pages/camera/Camera';
 import NavBar from "./components/NavBar/NavBar";
 import "./App.css";
+import LogPage from "./pages/log/Log";
 
 const App = () => {
 
@@ -16,8 +16,8 @@ const App = () => {
     <Router>
       <NavBar />
       <Switch>
-        <Route path="/image">
-          <ImageLogPage />
+        <Route path="/log">
+          <LogPage />
         </Route>
         <Route path="/camera">
           <CameraPage />

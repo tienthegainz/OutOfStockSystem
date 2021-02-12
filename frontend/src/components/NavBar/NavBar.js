@@ -10,7 +10,7 @@ const NavBar = (props) => {
   const location = useLocation();
   const activeKeys = [
     { url: '/', key: '1' },
-    { url: '/image', key: '2' },
+    { url: '/log', key: '2' },
     { url: '/camera', key: '3' },
   ];
 
@@ -25,7 +25,7 @@ const NavBar = (props) => {
           <Link to="/">CCTV</Link>
         </Menu.Item>
         <Menu.Item key="2" icon={<FolderViewOutlined />}>
-          <Link to="/image">Image Log</Link>
+          <Link to="/log">Log</Link>
         </Menu.Item>
         <Menu.Item key="3" icon={<VideoCameraAddOutlined />}>
           <Link to="/camera">Camera</Link>
