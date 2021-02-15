@@ -5,11 +5,11 @@ import { serverApi } from "../../common/serverApi";
 import { Button } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 
-const ImageLog = () => {
+const ImageLog = (props) => {
   const limit = 8;
   const [images, setImages] = useState([[]]);
   const [page, setPage] = useState(1);
-  const [totalPage, setTotalPage] = useState();
+  const [totalPage, setTotalPage] = useState(1);
 
   const renderImage = (data) => {
     let arr = [];
@@ -23,31 +23,39 @@ const ImageLog = () => {
   }
 
   useEffect(() => {
-    const getData = async () => {
+    const getData = async (id, date) => {
       const data = {
         "limit": limit,
-        "page": page
+        "page": page,
+        "from": date + " 00:00:00",
+        "to": date + " 23:59:99"
       };
-      let respond = await serverApi({ url: '/log/image/1', data: data, method: 'post' })
+      let respond = await serverApi({ url: '/log/image/' + id, data: data, method: 'post' })
       console.log(respond);
       if (respond.status === 200) {
         setImages(renderImage(respond.data.data));
       }
     };
-    getData();
-  }, [page]);
+    if (props.query && props.cameraId.id)
+      getData(props.cameraId.id, props.date);
+  }, [page, props]);
 
   useEffect(() => {
-    const getTotal = async () => {
-      let respond = await serverApi({ url: '/log/image/count/1' })
+    const getTotal = async (id, date) => {
+      const data = {
+        "from": date + " 00:00:00",
+        "to": date + " 23:59:99"
+      };
+      let respond = await serverApi({ url: '/log/image/count/' + id, data: data, method: 'post' })
       console.log(respond);
       if (respond.status === 200) {
         let total = Math.round(respond.data.total / limit)
         setTotalPage(total);
       }
     };
-    getTotal();
-  }, [])
+    if (props.query && props.cameraId.id)
+      getTotal(props.cameraId.id, props.date);
+  }, [props])
 
   return (
     <React.Fragment>

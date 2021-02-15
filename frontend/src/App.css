@@ -9,3 +9,8 @@
   color: #1890ff;
   font-size: 40px;
 }
+
+.error {
+  color: #ff0000;
+  font-weight: bold;
+}
