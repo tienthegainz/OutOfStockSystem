@@ -295,19 +295,24 @@ def get_all_log_text():
 @app.route('/log/text/<id>', methods=['POST'])
 def get_log_text_by_id(id):
     data = request.get_json()
-    limit = data['limit'] if 'limit' in data else 5
-    offset = (data['page'] - 1) * limit if 'page' in data else 0
+    limit = data['limit'] if 'limit' in data else None
     from_date = data['from'] if 'from' in data else None
     to_date = data['to'] if 'to' in data else None
     texts = []
     if from_date is None or to_date is None:
-        texts = database.get(
-            "SELECT * FROM log_text WHERE camera_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
-            LogTextModel, value=(id, limit, offset))
+        if limit is not None:
+            texts = database.get(
+                "SELECT * FROM log_text WHERE camera_id = ? ORDER BY id DESC LIMIT ?",
+                LogTextModel, value=(id, limit))
     else:
-        texts = database.get(
-            "SELECT * FROM log_text WHERE time BETWEEN ? AND ? AND camera_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
-            LogTextModel, value=(from_date, to_date, id, limit, offset))
+        if limit is not None:
+            texts = database.get(
+                "SELECT * FROM log_text WHERE time BETWEEN ? AND ? AND camera_id = ? ORDER BY id DESC LIMIT ?",
+                LogTextModel, value=(from_date, to_date, id, limit))
+        else:
+            texts = database.get(
+                "SELECT * FROM log_text WHERE time BETWEEN ? AND ? AND camera_id = ? ORDER BY id DESC",
+                LogTextModel, value=(from_date, to_date, id))
     json_texts = [text.dict()
                   for text in texts] if texts is not None else []
     return jsonify({'success': True, 'data': json_texts})
@@ -332,11 +337,14 @@ def get_all_log_image():
     return jsonify({'success': True, 'data': json_images})
 
 
-@app.route('/log/image/count/<id>', methods=['GET'])
+@app.route('/log/image/count/<id>', methods=['POST'])
 def count_log_image_by_id(id):
-    sql = "SELECT COUNT(*) FROM log_image WHERE camera_id = ?"
+    data = request.get_json()
+    from_date = data['from']
+    to_date = data['to']
+    sql = "SELECT COUNT(*) FROM log_image WHERE camera_id = ? AND time BETWEEN ? AND ?"
     cur = database.create_cursor()
-    cur.execute(sql, (id))
+    cur.execute(sql, (id, from_date, to_date))
     result = cur.fetchone()
     total = result[0]
     return jsonify({'success': True, 'total': total})
