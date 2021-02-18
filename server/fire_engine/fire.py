@@ -2,7 +2,7 @@ import sys
 sys.path.append('/home/tienhv/GR/OutOfStockSystem/server')  # nopep8
 from shutil import Error
 from PIL import Image
-from db import Singleton
+from common import Singleton
 import time
 
 from fire_engine.model import resnet101

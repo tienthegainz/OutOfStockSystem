@@ -1,66 +1,8 @@
 import sys
 sys.path.append('/home/tienhv/GR/OutOfStockSystem/server')  # nopep8
-from db import Singleton
+from common import Singleton
 from config import TRACKER
 import cv2
-
-
-class Tracker(metaclass=Singleton):
-    """
-        Manage shelf area and object state single
-    """
-
-    def __init__(self):
-        self.frame = None
-        self.bbox = None
-        self.config = TRACKER
-        self.is_out = False
-
-    def update(self, frame, bbox):
-        self.bbox = bbox
-        self.frame = frame
-
-    def update_frame(self, frame):
-        self.frame = frame
-
-    def draw_bbox(self, frame):
-        if self.bbox:
-            p1 = (int(self.bbox[0]), int(self.bbox[1]))
-            p2 = (int(self.bbox[0] + self.bbox[2]),
-                  int(self.bbox[1] + self.bbox[3]))
-            cv2.rectangle(frame, p1, p2, (0, 255, 255), 2, 1)
-        return frame
-
-    def draw_roi(self, frame):
-        p1 = (int(self.config['roi'][0]), int(self.config['roi'][1]))
-        p2 = (int(self.config['roi'][0] + self.config['roi'][2]),
-              int(self.config['roi'][1] + self.config['roi'][3]))
-        cv2.rectangle(frame, p1, p2, (255, 0, 0), 2, 1)
-        return frame
-
-    def draw(self):
-        frame = self.frame.copy()
-        frame = self.draw_roi(frame)
-        frame = self.draw_bbox(frame)
-        return frame
-
-    def check_outside(self):
-        """
-            Check if object is out of ROI
-        """
-        obj_center = (int(self.bbox[0] + self.bbox[2]/2),
-                      int(self.bbox[1] + self.bbox[3]/2))
-        if obj_center[0] < int(self.config['roi'][0]) or \
-                obj_center[0] > int(self.config['roi'][0] + self.config['roi'][2]) or \
-                obj_center[1] < int(self.config['roi'][1]) or \
-                obj_center[1] > int(self.config['roi'][1] + self.config['roi'][3]):
-            if self.is_out:
-                return False
-            else:
-                self.is_out = True
-                return True
-        else:
-            return False
 
 
 class TrackerMulti(metaclass=Singleton):
@@ -69,6 +11,7 @@ class TrackerMulti(metaclass=Singleton):
     """
 
     def __init__(self):
+        print('Init Tracking engine')
         self.frame = None
         self.config = TRACKER
         # {id: string, bbox: list[], is_out: bool}
@@ -162,32 +105,3 @@ class TrackerMulti(metaclass=Singleton):
 
     def clear_all_objects(self):
         self.objs = []
-
-
-if __name__ == "__main__":
-    t = TrackerMulti()
-    frame = cv2.imread(
-        '/home/tienhv/2021-01-06-215110.jpg')
-    t.update(frame, [
-        {'id': 'are123', 'bbox': [160, 280, 50, 78]},
-        {'id': 'qhi538', 'bbox': [450, 310, 80, 100]}
-    ])
-    print('Out: ', t.check_outside())
-    cv2.imshow('image', t.draw())
-    cv2.waitKey(0)
-    print(t.objs)
-
-    t.update(frame, [
-        {'id': 'are123', 'bbox': [160, 150, 50, 78]},
-        {'id': 'eee4w1', 'bbox': [200, 280, 180, 200]}
-    ])
-    print('Out: ', t.check_outside())
-    cv2.imshow('image', t.draw())
-    cv2.waitKey(0)
-    print(t.objs)
-
-    t.update(frame)
-    print('Out: ', t.check_outside())
-    cv2.imshow('image', t.draw())
-    cv2.waitKey(0)
-    print(t.objs)

@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw
 import cv2
 import numpy as np
 import time
-from db import Singleton
+from common import Singleton
 from detect_engine.retinanet import model
 from detect_engine.datasets.dataloader import Normalizer, Resizer, UnNormalizer, DATASET_CLASSES
 from config import DETECTOR

@@ -19,6 +19,7 @@ class Searcher(metaclass=Singleton):
                 space: distance algorithm (L2, Inner product, cosine)
                 threshold: similarity threshold
         """
+        print('Init search engine')
         storage_config = config.STORAGE
         search_config = config.SEARCHER
         self.graph_path = os.path.join(

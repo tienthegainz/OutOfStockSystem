@@ -1,21 +1,13 @@
 import config
 import sqlite3
 from sqlite3 import Error
-
-
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(
-                Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
+from common import Singleton
 
 
 class Database(metaclass=Singleton):
 
     def __init__(self):
+        print('Init Database')
         self.db_config = config.DATABASE
         if self.db_config['type'] == 'sqlite3':
             try:
