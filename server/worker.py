@@ -25,7 +25,7 @@ firebase_storage = firebase_app.storage()
 
 
 @celery.task(ignore_result=True)
-def fire_alert(data):
+def fire_alert(data, room):
     socketio = SocketIO(app, cors_allowed_origins="*",
                         message_queue='redis://')
     print('Detecting fire...')
@@ -33,11 +33,13 @@ def fire_alert(data):
         image_data = base64.b64decode(data)
         image = Image.open(io.BytesIO(image_data))
         result = fire_alarm.check_fire(image)
-        socketio.emit('fire', {'fire': result})
+        socketio.emit('fire', {'fire': result}, room=room)
         if result:
             t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             socketio.emit(
                 'log', {'log': '[{}] Fire warning'.format(t)})
+            database.insert(
+                'INSERT INTO log_text(camera_id, time, message) VALUES(?,?,?)', (int(room), t, '[{}] Fire warning'.format(t)))
 
 
 @celery.task(ignore_result=True)
@@ -49,6 +51,8 @@ def save_image(data, room):
         t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         socketio.emit(
             'log', {'log': '[{}] Object is out of ROI. Saving image...'.format(t)}, room=room)
+        database.insert(
+            'INSERT INTO log_text(camera_id, time, message) VALUES(?,?,?)', (int(room), t, '[{}] Object is out of ROI. Saving image...'.format(t)))
 
     send_image = io.BytesIO(
         base64.b64decode(re.sub("data:image/jpeg;base64", '', data)))

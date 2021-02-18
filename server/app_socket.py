@@ -44,7 +44,7 @@ def on_send_image(data):
     try:
         if data['fire_check'] == True:
             print('Fire detection running ...')
-            fire_alert.delay(data['image'])
+            fire_alert.delay(data['image'], room)
 
         info = data['info'] if 'info' in data else None
 
