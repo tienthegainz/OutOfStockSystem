@@ -21,7 +21,6 @@ tracker = TrackerMulti()
 database = Database()
 
 
-
 ######################## Utils ########################
 
 
@@ -238,23 +237,3 @@ def get_log_image_by_id(id):
     json_images = [image.dict()
                    for image in images] if images is not None else []
     return jsonify({'success': True, 'data': json_images})
-
-
-######################## Test API ########################
-
-
-@app.route('/room/test', methods=['POST'])
-def test_room():
-    data = request.get_json()
-    room = data['id']
-    print(type(room))
-    socketio.emit('log', {'log': 'Send data to client'},
-                  room=room, broadcast=True)
-    return jsonify({'success': True})
-
-
-@app.route('/param/test/<id>', methods=['GET'])
-def test_param(id=None):
-    limit = request.args.get('limit', default=5, type=int)
-    start = request.args.get('limit', default=1, type=int)
-    return jsonify({'success': True, 'result': id, 'start': start, 'limit': limit})
