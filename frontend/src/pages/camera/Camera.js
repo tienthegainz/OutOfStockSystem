@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import './Camera.css';
-import axios from 'axios';
 import { Collapse } from 'antd';
 import CameraPanel from "../../components/CameraPanel/CameraPanel";
 

@@ -9,6 +9,7 @@ import CameraPage from './pages/camera/Camera';
 import NavBar from "./components/NavBar/NavBar";
 import "./App.css";
 import LogPage from "./pages/log/Log";
+import ProductPage from "./pages/product/Product";
 
 const App = () => {
 
@@ -21,6 +22,9 @@ const App = () => {
         </Route>
         <Route path="/camera">
           <CameraPage />
+        </Route>
+        <Route path="/product">
+          <ProductPage />
         </Route>
         <Route path="/">
           <ProductWatcherPage />

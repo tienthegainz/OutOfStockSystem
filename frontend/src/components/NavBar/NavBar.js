@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Menu } from 'antd';
-import { EyeOutlined, FolderViewOutlined, VideoCameraAddOutlined } from '@ant-design/icons';
+import { EyeOutlined, FolderViewOutlined, VideoCameraAddOutlined, AppstoreAddOutlined } from '@ant-design/icons';
 import { useLocation, Link } from "react-router-dom";
 import './NavBar.css';
 
@@ -12,6 +12,7 @@ const NavBar = (props) => {
     { url: '/', key: '1' },
     { url: '/log', key: '2' },
     { url: '/camera', key: '3' },
+    { url: '/product', key: '4' },
   ];
 
   return (
@@ -29,6 +30,9 @@ const NavBar = (props) => {
         </Menu.Item>
         <Menu.Item key="3" icon={<VideoCameraAddOutlined />}>
           <Link to="/camera">Camera</Link>
+        </Menu.Item>
+        <Menu.Item key="4" icon={<AppstoreAddOutlined />}>
+          <Link to="/product">Product</Link>
         </Menu.Item>
       </Menu>
     </div>
