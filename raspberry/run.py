@@ -16,7 +16,6 @@ post_url = 'http://10.42.0.1:5001'
 if __name__ == '__main__':
     camera_info = {
         "id": 1,
-        "name": "Line 1 Row A"
     }
     # Notify server about camera
     respond = requests.post(
