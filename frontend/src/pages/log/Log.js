@@ -4,15 +4,29 @@ import { Tabs, DatePicker, Menu, Dropdown, Button } from 'antd';
 import { DownOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import ImageLog from "../../components/image_log/ImageLog";
 import LogBox from "../../components/LogBox/LogBox";
+import { serverApi } from "../../common/serverApi";
 
 const { TabPane } = Tabs;
 
 const LogPage = () => {
 
   const [date, setDate] = useState();
+  const [allCamera, setAllCamera] = useState([]);
   const [camera, setCamera] = useState();
   // 0: not clicked, 1: ok, -1: error
   const [check, setCheck] = useState(0);
+
+  useEffect(() => {
+    const getData = async () => {
+      let respond = await serverApi({ url: '/camera' })
+      console.log(respond);
+      if (respond.status === 200) {
+        let data = respond.data.cameras;
+        setAllCamera(data);
+      }
+    };
+    getData();
+  }, [])
 
   return (<div className="content" style={{ width: '92%', marginLeft: '8%' }} >
     <div className='log-form' >
@@ -25,21 +39,21 @@ const LogPage = () => {
           setDate(dateString);
           setCheck(0);
         }}
-        format='DD/MM/YYYY'
+        format='YYYY/MM/DD'
         style={{ marginBottom: '15px', width: '100%' }}
       />
       <Dropdown
         overlay={(
           <Menu >
-            <Menu.Item
+            {allCamera.map(c => <Menu.Item
               icon={<VideoCameraOutlined />}
               onClick={async () => {
-                setCamera({ id: 1, name: 'Line 1 Row A' });
+                setCamera(c);
                 setCheck(0);
               }}
             >
-              Line 1 Row A
-              </Menu.Item>
+              {c.name}
+            </Menu.Item>)}
           </Menu>
         )}
         trigger={['click']}

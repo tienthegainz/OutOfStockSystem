@@ -3,25 +3,26 @@ import { Button } from 'antd';
 import ProductPanel from "../../components/ProductPanel/ProductPanel";
 import './Product.css';
 import ProductForm from "../../components/ProductForm/ProductForm";
+import { serverApi } from "../../common/serverApi";
 
 
 const ProductPage = (props) => {
 
-  const [products, setProducts] = useState([
-    {
-      id: 1,
-      name: "Gucci Guilt INTENSE",
-      price: 1500000,
-      img: "https://firebasestorage.googleapis.com/v0/b/graduation-thesis-46291.appspot.com/o/products%2F1.jpeg?alt=media"
-    },
-    {
-      id: 2,
-      name: "Water bottle",
-      price: 10000,
-      img: "https://firebasestorage.googleapis.com/v0/b/graduation-thesis-46291.appspot.com/o/products%2F2.png?alt=media"
-    }
-  ]);
+  const [products, setProducts] = useState([]);
+
   const [add, setAdd] = useState(false);
+
+  useEffect(() => {
+    const getData = async () => {
+      let respond = await serverApi({ url: '/product' })
+      console.log(respond);
+      if (respond.status === 200) {
+        let data = respond.data.products;
+        setProducts(data);
+      }
+    };
+    getData();
+  }, [])
 
   return (
     <div className="content">

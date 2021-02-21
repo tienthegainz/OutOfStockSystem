@@ -49,7 +49,9 @@ const ImageLog = (props) => {
       let respond = await serverApi({ url: '/log/image/count/' + id, data: data, method: 'post' })
       console.log(respond);
       if (respond.status === 200) {
-        let total = Math.round(respond.data.total / limit)
+        let total = Math.ceil(respond.data.total / limit)
+        if (total === 0)
+          total = 1;
         setTotalPage(total);
       }
     };

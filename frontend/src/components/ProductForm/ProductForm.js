@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Form, Input, Button, Upload } from 'antd';
+import { Form, Input, InputNumber, Button, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import './ProductForm.css'
+import { serverApi } from "../../common/serverApi";
 
 const normFile = (e) => {
-  console.log('Upload event:', e);
-  if (Array.isArray(e)) {
-    return e;
-  }
-  return e && e.fileList;
+  // console.log('Upload: ', e)
+  return e.fileList;
 };
 
 const dummyRequest = ({ file, onSuccess }) => {
@@ -17,11 +15,34 @@ const dummyRequest = ({ file, onSuccess }) => {
   }, 0);
 };
 
+const getBase64 = (file) => {
+  return new Promise(function (resolve) {
+    var reader = new FileReader();
+    reader.onloadend = function () {
+      resolve(reader.result)
+    }
+    reader.readAsDataURL(file);
+  })
+}
+
 const ProductForm = (props) => {
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false)
 
   const onFinish = (values) => {
-    console.log('Success:', values);
+    const upload = async (values) => {
+      // setLoading(true);
+      let images = values.images;
+      for (const key in images) {
+        let f = images[key].originFileObj;
+        images[key] = await getBase64(f);
+      }
+      values.images = images;
+      console.log('Upload: ', values);
+      const respond = await serverApi({ url: '/product', data: values, method: 'post' });
+      console.log(respond);
+    }
+    upload(values);
   };
 
   const onFinishFailed = (errorInfo) => {
@@ -52,18 +73,22 @@ const ProductForm = (props) => {
           required
           tooltip="Price in VND"
         >
-          <Input />
+          <InputNumber
+            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+            parser={value => value.replace(/\$\s?|(,*)/g, '')}
+            style={{ width: '50%' }}
+          />
         </Form.Item>
         <Form.Item
-          name="upload"
+          name="images"
           label="Upload"
           required
-          tooltip="Recommend 3-4 image"
+          tooltip="Recommend 3 to 4 image"
           valuePropName="fileList"
           getValueFromEvent={normFile}
         >
           <Upload
-            name="logo"
+            name="product"
             listType="picture"
             customRequest={dummyRequest}
           >
@@ -71,7 +96,13 @@ const ProductForm = (props) => {
           </Upload>
         </Form.Item>
         <Form.Item>
-          <Button type="primary" htmlType="submit">Submit</Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+          >
+            Submit
+          </Button>
           <Button type="default" onClick={props.cancel}>Cancel</Button>
         </Form.Item>
       </Form>

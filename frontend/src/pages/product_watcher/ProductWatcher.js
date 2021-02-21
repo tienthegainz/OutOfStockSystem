@@ -86,7 +86,7 @@ const ProductWatcherPage = () => {
 
   useEffect(() => {
     const getAllCamera = async () => {
-      let result = await serverApi({ url: '/camera' });
+      let result = await serverApi({ url: '/camera/active' });
       if (!result.error) {
         // console.log(result);
         setCameraList(result.data.cameras)
