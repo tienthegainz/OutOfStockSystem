@@ -19,7 +19,7 @@ if __name__ == '__main__':
     }
     # Notify server about camera
     respond = requests.post(
-        '{}/camera'.format(post_url), json=camera_info, timeout=4)
+        '{}/camera/active'.format(post_url), json=camera_info, timeout=4)
     print('Register camera with id: {} <== {}'.format(
         camera_info['id'], respond.json()))
     with SocketIO(socket_url, 5001, LoggingNamespace) as socketIO:
