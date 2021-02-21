@@ -1,4 +1,5 @@
-from app import app
+from app import app, db
+from model import *
 from celery import Celery
 from flask_socketio import SocketIO
 from firebase_config import FIREBASE_CONFIG
@@ -6,7 +7,6 @@ from fire_engine.fire import FireAlarm
 from datetime import datetime
 from PIL import Image
 from common import random_name_generator
-from db import Database
 
 import pyrebase
 import io
@@ -17,9 +17,9 @@ import re
 celery = Celery(
     app.name, broker=app.config['CELERY_BROKER_URL'],
     backend=app.config['CELERY_RESULT_BACKEND'])
-database = Database()
 
-fire_alarm = FireAlarm() if __name__ == 'worker' else None
+fire_alarm = FireAlarm()
+# fire_alarm = None
 firebase_app = pyrebase.initialize_app(FIREBASE_CONFIG)
 firebase_storage = firebase_app.storage()
 
@@ -35,31 +35,50 @@ def fire_alert(data, room):
         result = fire_alarm.check_fire(image)
         socketio.emit('fire', {'fire': result}, room=room)
         if result:
-            t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            t = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+            message = '[{}] Fire warning'.format(t)
             socketio.emit(
-                'log', {'log': '[{}] Fire warning'.format(t)})
-            database.insert(
-                'INSERT INTO log_text(camera_id, time, message) VALUES(?,?,?)', (int(room), t, '[{}] Fire warning'.format(t)))
+                'log', {'log': message})
+            log = LogText(message=message, time=t, camera_id=room)
+            db.session.add(log)
+            db.session.commit()
 
 
 @celery.task(ignore_result=True)
-def save_image(data, room):
+def save_image_log(data, room):
     socketio = SocketIO(app, cors_allowed_origins="*",
                         message_queue='redis://')
-    print('Saving image...')
+    print('Saving image and send log ...')
+    t = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     with app.app_context():
-        t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        socketio.emit(
-            'log', {'log': '[{}] Object is out of ROI. Saving image...'.format(t)}, room=room)
-        database.insert(
-            'INSERT INTO log_text(camera_id, time, message) VALUES(?,?,?)', (int(room), t, '[{}] Object is out of ROI. Saving image...'.format(t)))
+        # Log
+        message = '[{}] Object is out of ROI. Saving image...'.format(t)
+        socketio.emit('log', {'log': message}, room=room)
+        log = LogText(message=message, time=t, camera_id=room)
+        db.session.add(log)
+        # Image
+        send_image = io.BytesIO(
+            base64.b64decode(re.sub("data:image/jpeg;base64", '', data)))
+        image_name = random_name_generator() + '.jpg'
+        firebase_storage.child(
+            "images/{}".format(image_name)).put(send_image)
+        url = firebase_storage.child(
+            "images/{}".format(image_name)).get_url(None)
 
-    send_image = io.BytesIO(
-        base64.b64decode(re.sub("data:image/jpeg;base64", '', data)))
-    image_name = random_name_generator() + '.jpg'
-    firebase_storage.child(
-        "images/{}".format(image_name)).put(send_image)
-    url = firebase_storage.child("images/{}".format(image_name)).get_url(None)
-    t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    database.insert(
-        'INSERT INTO log_image(url, time, camera_id) VALUES(?,?,?)', (url, t, int(room)))
+        image = LogImage(url=url, time=t, camera_id=room)
+        db.session.add(image)
+        db.session.commit()
+
+
+@celery.task(ignore_result=True)
+def save_image_product(data, product_id):
+    print('Saving image products ...')
+    for image in data:
+        image_name = random_name_generator() + '.jpg'
+        firebase_storage.child(
+            "products/{}/{}".format(product_id, image_name)).put(image)
+        url = firebase_storage.child(
+            "products/{}/{}".format(product_id, image_name)).get_url(None)
+        image = ProductImage(url=url, product_id=product_id)
+        db.session.add(image)
+    db.session.commit()

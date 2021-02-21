@@ -2,8 +2,8 @@ import hnswlib
 import numpy as np
 import os
 import config
-from db import *
 from search_engine.extractor import Extractor
+from common import Singleton
 import PIL
 
 
@@ -24,8 +24,6 @@ class Searcher(metaclass=Singleton):
         search_config = config.SEARCHER
         self.graph_path = os.path.join(
             storage_config['path'], storage_config['ann'], 'index.bin')
-        # self.index_path = os.path.join(
-        #     storage_config['path'], storage_config['ann'], 'current_index')
 
         self.p = hnswlib.Index(
             space=search_config['space'], dim=search_config['dim'])

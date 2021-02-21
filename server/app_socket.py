@@ -2,7 +2,7 @@ from app import socketio
 from flask_socketio import join_room, leave_room
 from tracker_engine.tracker import TrackerMulti
 from PIL import Image
-from worker import save_image, fire_alert
+from worker import save_image_log, fire_alert
 
 import base64
 import io
@@ -24,7 +24,7 @@ def track_image(data, info, room):
         update_ok = tracker.update(np_image)
     draw_img = tracker.draw()
     if tracker.check_out_roi() or not update_ok:
-        save_image.delay(data, room)
+        save_image_log.delay(data, room)
 
     result_image = Image.fromarray(draw_img.astype(np.uint8))
     img_byte = io.BytesIO()
@@ -43,7 +43,6 @@ def on_send_image(data):
     socketio.emit('ready', {'ready': True}, room=room)
     try:
         if data['fire_check'] == True:
-            print('Fire detection running ...')
             fire_alert.delay(data['image'], room)
 
         info = data['info'] if 'info' in data else None

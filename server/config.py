@@ -1,13 +1,12 @@
 
 DATABASE = {
-    'path': '/home/tienhv/GR/OutOfStockSystem/server/dev.db',
+    'path': '/home/tienhv/GR/OutOfStockSystem/server/dev2.db',
     'type': 'sqlite3'
 }
 
 STORAGE = {
     'path': '/home/tienhv/GR/OutOfStockSystem/server/storage',
     'type': 'local',
-    'image': 'image',
     'ann': 'ann'
 }
 
