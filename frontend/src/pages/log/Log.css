@@ -1,0 +1,10 @@
+.log-form {
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}

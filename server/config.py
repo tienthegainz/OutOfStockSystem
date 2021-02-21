@@ -1,13 +1,12 @@
 
 DATABASE = {
-    'path': '/home/tienhv/GR/OutOfStockSystem/server/dummy.db',
+    'path': '/home/tienhv/GR/OutOfStockSystem/server/dev2.db',
     'type': 'sqlite3'
 }
 
 STORAGE = {
     'path': '/home/tienhv/GR/OutOfStockSystem/server/storage',
     'type': 'local',
-    'image': 'image',
     'ann': 'ann'
 }
 
@@ -24,5 +23,7 @@ DETECTOR = {
 }
 
 TRACKER = {
-
+    # x, y, h, w
+    'roi': [144, 250, 432, 330],
+    'no_bbox_thres': 5,
 }

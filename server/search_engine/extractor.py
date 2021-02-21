@@ -6,7 +6,7 @@ import torch
 import PIL
 import functools
 import numpy as np
-from db import *
+from common import Singleton
 
 
 class Extractor(metaclass=Singleton):
@@ -15,6 +15,7 @@ class Extractor(metaclass=Singleton):
     """
 
     def __init__(self, size=248):
+        print('Init Extraction engine')
         self.model = resnet50(pretrained=True, progress=True)
         self.size = size
         self.tfms = transforms.Compose([

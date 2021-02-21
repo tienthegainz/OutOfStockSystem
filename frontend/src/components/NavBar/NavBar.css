@@ -1,0 +1,10 @@
+.nav-bar {
+  position: fixed;
+  height: 100vh;
+  width: 8%;
+  border-right: 1px solid #f0f0f0;
+}
+
+.nav-bar h2 {
+  text-align: center;
+}

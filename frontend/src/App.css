@@ -1,0 +1,16 @@
+.content {
+  width: calc(92% - 10px);
+  margin-left: calc(8% + 10px);
+  position: relative;
+}
+
+.content h1 {
+  text-align: center;
+  color: #1890ff;
+  font-size: 40px;
+}
+
+.error {
+  color: #ff0000;
+  font-weight: bold;
+}
