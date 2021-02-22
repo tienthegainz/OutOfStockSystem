@@ -75,8 +75,10 @@ def save_image_product(data, product_id):
     print('Saving image products ...')
     for image in data:
         image_name = random_name_generator() + '.jpg'
+        send_image = io.BytesIO(
+            base64.b64decode(image))
         firebase_storage.child(
-            "products/{}/{}".format(product_id, image_name)).put(image)
+            "products/{}/{}".format(product_id, image_name)).put(send_image)
         url = firebase_storage.child(
             "products/{}/{}".format(product_id, image_name)).get_url(None)
         image = ProductImage(url=url, product_id=product_id)
