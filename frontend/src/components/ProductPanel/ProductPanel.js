@@ -44,7 +44,7 @@ const ProductPanel = (props) => {
             disabled={true}
           />
           <div className='img-space'>
-            {props.data.images.map(img => <img className='tree-img' src={img} alt="preview" />)}
+            {props.data.images.map(img => <img className='tree-img' src={img.url} alt="preview" />)}
           </div>
           <Button
             type="primary"

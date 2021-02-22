@@ -31,7 +31,7 @@ const ProductForm = (props) => {
 
   const onFinish = (values) => {
     const upload = async (values) => {
-      // setLoading(true);
+      setLoading(true);
       let images = values.images;
       for (const key in images) {
         let f = images[key].originFileObj;
@@ -41,6 +41,7 @@ const ProductForm = (props) => {
       console.log('Upload: ', values);
       const respond = await serverApi({ url: '/product', data: values, method: 'post' });
       console.log(respond);
+      props.cancel();
     }
     upload(values);
   };
