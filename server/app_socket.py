@@ -18,7 +18,7 @@ def track_image(data, info, room):
     image = Image.open(io.BytesIO(image_data))
     np_image = np.array(image)
     update_ok = False
-    if info != None:
+    if info is not None and info:
         update_ok = tracker.update(np_image, info)
     else:
         update_ok = tracker.update(np_image)

@@ -36,10 +36,11 @@ def search_product(data):
         pil_prod = Image.fromarray(prod.astype('uint8'), 'RGB')
         feature = extractor.extract(pil_prod)
         index = searcher.query_products(feature)
+        # print('Search with index: ', index)
         if index is not None:
             product = Product.query.join(ProductImage).filter(
-                Product.id == ProductImage.product_id).filter(ProductImage.product_id == index).first()
-            products.append(product.to_dict())
+                Product.id == ProductImage.product_id).filter(ProductImage.id == index).first()
+            products.append(product)
     return products
 
 
@@ -102,7 +103,10 @@ def watch_product():
     # logging
     logs = ['{}: {}'.format(c['name'], c['quantity']) for c in count]
     t = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-    message = '[{}] Detected product: {}'.format(t, ', '.join(logs))
+    if logs:
+        message = '[{}] Detected product: {}'.format(t, ', '.join(logs))
+    else:
+        message = '[{}] No object detected'.format(t)
     socketio.emit('log',
                   {'log': message},
                   room=room,
@@ -121,6 +125,15 @@ def get_product():
     return jsonify({'success': True, 'products': [r.to_dict() for r in results]})
 
 
+@app.route('/product/<id>', methods=['DELETE'])
+def delete_product(id):
+    product = Product.query.filter(Product.id == id).first()
+    image_ids = [image.id for image in product.images]
+    indexes = np.array(image_ids)
+    searcher.delete_products(indexes)
+    return jsonify({'success': True})
+
+
 @app.route('/product', methods=['POST'])
 def add_product():
     # TODO
@@ -130,13 +143,13 @@ def add_product():
     product = Product(name=request_data['name'], price=request_data['price'])
     db.session.add(product)
     db.session.commit()
-    print('Product id: ', product.id)
+    # print('Product id: ', product.id)
 
     for image_str in request_data['images']:
         imageb64 = re.sub('^data:image/.+;base64,', '', image_str)
         image_data = base64.b64decode(imageb64)
         image = Image.open(io.BytesIO(image_data)).convert('RGB')
-        pil_images.append(image)
+        # pil_images.append(image)
         base64_images.append(imageb64)
         # image.show()
 
@@ -146,10 +159,10 @@ def add_product():
     max_product_image_id = db.session.query(func.max(ProductImage.id)).scalar()
     if max_product_image_id is None:
         max_product_image_id = 0
-    print('Max image ID: ', max_product_image_id)
+    # print('Max image ID: ', max_product_image_id)
     product_index = np.arange(max_product_image_id+1,
                               max_product_image_id+1+product_qty)
-    print('Idx: ', product_index)
+    # print('Idx: ', product_index)
     # ##########################
 
     save_image_product.delay(base64_images, product.id)
@@ -186,7 +199,7 @@ def get_active_camera():
 @app.route('/camera', methods=['GET'])
 def get_camera():
     results = Camera.query.all()
-    print(results)
+    # print(results)
     return jsonify({'success': True, 'cameras': [result.to_dict() for result in results]})
 
 ######################## User API ########################

@@ -36,11 +36,10 @@ class Extractor(metaclass=Singleton):
             images: list of PIL Image
             Return: numpy array
         """
-        images = [self.preprocess(image) for image in images]
+        features = [self.extract(image) for image in images]
+        features = np.squeeze(np.array(features), axis=1)
 
-        images_tensor = torch.cat(images, dim=0)
-
-        return self.model.extract(images_tensor).detach().cpu().numpy()
+        return features
 
     def preprocess(self, image):
         return torch.unsqueeze(self.tfms(image), 0)

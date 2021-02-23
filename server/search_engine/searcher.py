@@ -55,6 +55,16 @@ class Searcher(metaclass=Singleton):
             # TODO: Logging here
             print(err)
 
+    def delete_products(self, index):
+        try:
+            if index.shape[0] == 0:
+                raise ValueError('Index is empty')
+            self.p.mark_deleted(index)
+            print('Mark idx: {} as deleted in tree'.format(index))
+        except Exception as err:
+            # TODO: Logging here
+            print(err)
+
     def query_products(self, data):
         try:
             index, distance = self.p.knn_query(data, k=1)
@@ -67,17 +77,6 @@ class Searcher(metaclass=Singleton):
             # TODO: Logging here
             print(err)
             return None
-
-    def build_graph_from_storage(self, images):
-        data = list()
-        index = list()
-        for image in images:
-            index.append(image.id)
-            data.append(self.extractor.extract(PIL.Image.open(image.path)))
-
-        data = np.squeeze(np.array(data), axis=1)
-        index = np.array(index)
-        self.add_products(data, index)
 
     def save_graph(self):
         print("Saving index to '%s'" % self.graph_path)
