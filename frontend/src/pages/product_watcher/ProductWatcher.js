@@ -90,6 +90,7 @@ const ProductWatcherPage = () => {
       if (!result.error) {
         // console.log(result);
         setCameraList(result.data.cameras)
+
       }
     }
     getAllCamera();
@@ -97,6 +98,9 @@ const ProductWatcherPage = () => {
     camera_socket.on('camera_list', data => {
       console.log(data);
       setCameraList(data.cameras);
+      if (data.cameras.length === 0) {
+        setCamera(null);
+      }
     });
 
     // CLEAN UP THE EFFECT

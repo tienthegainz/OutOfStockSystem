@@ -196,6 +196,15 @@ def get_active_camera():
     return jsonify({'success': True, 'cameras': cameras})
 
 
+@app.route('/camera/active/<id>', methods=['DELETE'])
+def delete_active_camera(id):
+    global cameras
+    cam_id = int(id)
+    cameras = [cam for cam in cameras if cam['id'] != cam_id]
+    socketio.emit('camera_list', {'cameras': cameras}, broadcast=True)
+    return jsonify({'success': True, 'deleted_cameras': cameras})
+
+
 @app.route('/camera', methods=['GET'])
 def get_camera():
     results = Camera.query.all()
