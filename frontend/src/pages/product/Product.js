@@ -12,15 +12,17 @@ const ProductPage = (props) => {
 
   const [add, setAdd] = useState(false);
 
+  const getData = async () => {
+    let respond = await serverApi({ url: '/product' })
+    console.log(respond);
+    if (respond.status === 200) {
+      let data = respond.data.products;
+      setProducts(data);
+    }
+  };
+
   useEffect(() => {
-    const getData = async () => {
-      let respond = await serverApi({ url: '/product' })
-      console.log(respond);
-      if (respond.status === 200) {
-        let data = respond.data.products;
-        setProducts(data);
-      }
-    };
+
     getData();
   }, [])
 
@@ -29,9 +31,14 @@ const ProductPage = (props) => {
       <h1>Product management</h1>
       <div class="product">
         {products.map(p => <ProductPanel data={p} key={p.id} />)}
-        {add ? <ProductForm cancel={() => setAdd(false)} /> : <Button type="text">
-          <span className="func-line" onClick={() => setAdd(true)} >Add products</span>
-        </Button>}
+        {add ? <ProductForm
+          cancel={() => {
+            setAdd(false);
+            getData();
+          }}
+        /> : <Button type="text">
+            <span className="func-line" onClick={() => setAdd(true)} >Add products</span>
+          </Button>}
       </div>
     </div>
   );
