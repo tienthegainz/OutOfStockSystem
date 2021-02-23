@@ -99,7 +99,10 @@ const ProductWatcherPage = () => {
       console.log(data);
       setCameraList(data.cameras);
       if (data.cameras.length === 0) {
+        // Reset
         setCamera(null);
+        setReady(false);
+        setFire(false);
       }
     });
 
