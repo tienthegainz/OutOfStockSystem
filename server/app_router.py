@@ -1,4 +1,4 @@
-from app import app, socketio, cameras, db
+from app import app, socketio, db
 from flask import jsonify, request
 from PIL import Image
 from datetime import datetime
@@ -114,8 +114,7 @@ def watch_product():
     socketio.emit('image', {'image': result_image}, room=room, broadcast=True)
     # Add log to db
     log = LogText(message=message, time=t, camera_id=room)
-    db.session.add(log)
-    db.session.commit()
+    log.save_to_db()
     return jsonify({'success': True, 'info': info})
 
 
@@ -141,8 +140,7 @@ def add_product():
     pil_images = []
     base64_images = []
     product = Product(name=request_data['name'], price=request_data['price'])
-    db.session.add(product)
-    db.session.commit()
+    product.save_to_db()
     # print('Product id: ', product.id)
 
     for image_str in request_data['images']:
@@ -176,33 +174,37 @@ def add_product():
 
 @app.route('/camera/active', methods=['POST'])
 def add_active_camera():
-    global cameras
     camera_id = request.get_json()['id']
-    duplicate = False
-    for camera in cameras:
-        if camera_id == camera['id']:
-            duplicate = True
-            break
-    if not duplicate:
-        camera = Camera.query.filter(Camera.id == camera_id).first()
-        cameras.append(camera.to_dict())
-        socketio.emit('camera_list', {'cameras': cameras}, broadcast=True)
+    camera = Camera.query.filter(Camera.id == camera_id).first()
+    if camera is not None:
+        camera.active = True
+        camera.save_to_db()
+        cameras = Camera.query.all()
+
+        socketio.emit('camera_list', {'cameras': [
+                      cam.to_dict() for cam in cameras if cam.active]}, broadcast=True)
     return jsonify({'success': True})
 
 
 @app.route('/camera/active', methods=['GET'])
 def get_active_camera():
-    global cameras
-    return jsonify({'success': True, 'cameras': cameras})
+    cameras = Camera.query.all()
+    return jsonify({'success': True, 'cameras': [cam.to_dict() for cam in cameras if cam.active]})
 
 
 @app.route('/camera/active/<id>', methods=['DELETE'])
 def delete_active_camera(id):
-    global cameras
-    cam_id = int(id)
-    cameras = [cam for cam in cameras if cam['id'] != cam_id]
-    socketio.emit('camera_list', {'cameras': cameras}, broadcast=True)
-    return jsonify({'success': True, 'deleted_cameras': cameras})
+    camera_id = int(id)
+    camera = Camera.query.filter(Camera.id == camera_id).first()
+    if camera is not None:
+        camera.active = False
+        camera.save_to_db()
+        cameras = Camera.query.all()
+
+        socketio.emit('camera_list', {'cameras': [
+                      cam.to_dict() for cam in cameras if cam.active]}, broadcast=True)
+
+    return jsonify({'success': True, 'deleted_cameras': camera.to_dict()})
 
 
 @app.route('/camera', methods=['GET'])

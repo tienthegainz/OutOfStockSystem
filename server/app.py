@@ -18,8 +18,6 @@ CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 db = SQLAlchemy(app)
 
-# Active camera list on runtime
-cameras = []
 
 if __name__ == '__main__':
     from app_router import *

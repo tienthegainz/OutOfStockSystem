@@ -40,8 +40,7 @@ def fire_alert(data, room):
             socketio.emit(
                 'log', {'log': message})
             log = LogText(message=message, time=t, camera_id=room)
-            db.session.add(log)
-            db.session.commit()
+            log.save_to_db()
 
 
 @celery.task(ignore_result=True)

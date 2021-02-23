@@ -17,6 +17,10 @@ class Product(db.Model):
             'images': [image.to_dict() for image in self.images]
         }
 
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
+
 
 class ProductImage(db.Model):
     __tablename__ = 'product_images'
@@ -31,23 +35,32 @@ class ProductImage(db.Model):
     def to_dict(self):
         return {'id': self.id, 'url': self.url, 'product_id': self.product_id}
 
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
+
 
 class Camera(db.Model):
     __tablename__ = 'cameras'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
+    active = db.Column(db.Boolean, default=False)
     images = db.relationship('LogImage', backref='cameras', lazy=True)
     texts = db.relationship('LogText', backref='cameras', lazy=True)
 
     def __repr__(self):
-        return "<Camera(id = '%d', name='%s')>" % (self.id, self.name)
+        return "<Camera(id = '%d', name='%s, active='%r')>" % (self.id, self.name, self.active)
 
     def to_dict(self):
         return {
-            'id': self.id, 'name': self.name,
-            'images': [image.to_dict() for image in self.images],
-            'texts': [text.to_dict() for text in self.texts]
+            'id': self.id, 'name': self.name, 'active': self.active,
+            # 'images': [image.to_dict() for image in self.images],
+            # 'texts': [text.to_dict() for text in self.texts]
         }
+
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
 
 
 class LogImage(db.Model):
@@ -64,6 +77,10 @@ class LogImage(db.Model):
     def to_dict(self):
         return {'id': self.id, 'url': self.url, 'time': self.time, 'camera_id': self.camera_id}
 
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
+
 
 class LogText(db.Model):
     __tablename__ = 'log_texts'
@@ -78,3 +95,7 @@ class LogText(db.Model):
 
     def to_dict(self):
         return {'id': self.id, 'message': self.message, 'time': self.time, 'camera_id': self.camera_id}
+
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
