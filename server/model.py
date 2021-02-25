@@ -21,6 +21,12 @@ class Product(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete_in_db(self):
+        for image in self.images:
+            image.delete_in_db()
+        db.session.delete(self)
+        db.session.commit()
+
 
 class ProductImage(db.Model):
     __tablename__ = 'product_images'
@@ -39,6 +45,10 @@ class ProductImage(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete_in_db(self):
+        db.session.delete(self)
+        db.session.commit()
+
 
 class Camera(db.Model):
     __tablename__ = 'cameras'
@@ -47,6 +57,7 @@ class Camera(db.Model):
     active = db.Column(db.Boolean, default=False)
     images = db.relationship('LogImage', backref='cameras', lazy=True)
     texts = db.relationship('LogText', backref='cameras', lazy=True)
+    products = db.relationship('CameraProduct', backref='cameras', lazy=True)
 
     def __repr__(self):
         return "<Camera(id = '%d', name='%s, active='%r')>" % (self.id, self.name, self.active)
@@ -60,6 +71,16 @@ class Camera(db.Model):
 
     def save_to_db(self):
         db.session.add(self)
+        db.session.commit()
+
+    def delete_in_db(self):
+        for image in self.images:
+            image.delete_in_db()
+        for text in self.texts:
+            text.delete_in_db()
+        for product in self.products:
+            product.delete_in_db()
+        db.session.delete(self)
         db.session.commit()
 
 
@@ -81,6 +102,10 @@ class LogImage(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete_in_db(self):
+        db.session.delete(self)
+        db.session.commit()
+
 
 class LogText(db.Model):
     __tablename__ = 'log_texts'
@@ -98,4 +123,31 @@ class LogText(db.Model):
 
     def save_to_db(self):
         db.session.add(self)
+        db.session.commit()
+
+    def delete_in_db(self):
+        db.session.delete(self)
+        db.session.commit()
+
+
+class CameraProduct(db.Model):
+    __tablename__ = 'camera_productss'
+    product_id = db.Column(db.Integer, db.ForeignKey(
+        'cameras.id'), nullable=False, primary_key=True)
+    camera_id = db.Column(db.Integer, db.ForeignKey(
+        'products.id'), nullable=False, primary_key=True)
+    quantity = db.Column(db.Integer, nullable=False)
+
+    def __repr__(self):
+        return "<CameraProduct(product_id = '%d', camera_id = '%d', quantity='%d')>" % (self.product_id, self.camera_id, self.quantity)
+
+    def to_dict(self):
+        return {'product_id': self.product_id, 'camera_id': self.camera_id, 'quantity': self.quantity}
+
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete_in_db(self):
+        db.session.delete(self)
         db.session.commit()
