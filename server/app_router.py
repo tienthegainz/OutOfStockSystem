@@ -40,7 +40,8 @@ def search_product(data):
         if index is not None:
             product = Product.query.join(ProductImage).filter(
                 Product.id == ProductImage.product_id).filter(ProductImage.id == index).first()
-            products.append(product)
+            if product is not None:
+                products.append(product)
     return products
 
 
@@ -127,9 +128,9 @@ def get_product():
 @app.route('/product/<id>', methods=['DELETE'])
 def delete_product(id):
     product = Product.query.filter(Product.id == id).first()
-    image_ids = [image.id for image in product.images]
-    indexes = np.array(image_ids)
+    indexes = [image.id for image in product.images]
     searcher.delete_products(indexes)
+    product.delete_in_db()
     return jsonify({'success': True})
 
 
@@ -147,7 +148,7 @@ def add_product():
         imageb64 = re.sub('^data:image/.+;base64,', '', image_str)
         image_data = base64.b64decode(imageb64)
         image = Image.open(io.BytesIO(image_data)).convert('RGB')
-        # pil_images.append(image)
+        pil_images.append(image)
         base64_images.append(imageb64)
         # image.show()
 
@@ -209,6 +210,13 @@ def delete_active_camera(id):
 
 @app.route('/camera', methods=['GET'])
 def get_camera():
+    results = Camera.query.all()
+    # print(results)
+    return jsonify({'success': True, 'cameras': [result.to_dict() for result in results]})
+
+
+@app.route('/camera/detail', methods=['GET'])
+def get_camera_detail():
     results = Camera.query.all()
     # print(results)
     return jsonify({'success': True, 'cameras': [result.to_dict() for result in results]})
