@@ -55,12 +55,13 @@ class Searcher(metaclass=Singleton):
             # TODO: Logging here
             print(err)
 
-    def delete_products(self, index):
+    def delete_products(self, indexes):
         try:
-            if index.shape[0] == 0:
+            if len(indexes) == 0:
                 raise ValueError('Index is empty')
-            self.p.mark_deleted(index)
-            print('Mark idx: {} as deleted in tree'.format(index))
+            for index in indexes:
+                self.p.mark_deleted(index)
+            print('Mark idx: {} as deleted in tree'.format(indexes))
         except Exception as err:
             # TODO: Logging here
             print(err)

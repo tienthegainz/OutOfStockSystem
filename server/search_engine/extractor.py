@@ -1,10 +1,7 @@
-import sys
-import os
 from search_engine.model import resnet50
 from torchvision import transforms
 import torch
 import PIL
-import functools
 import numpy as np
 from common import Singleton
 
@@ -37,7 +34,8 @@ class Extractor(metaclass=Singleton):
             Return: numpy array
         """
         features = [self.extract(image) for image in images]
-        features = np.squeeze(np.array(features), axis=1)
+        features = np.array(features)
+        features = np.squeeze(features, axis=1)
 
         return features
 
