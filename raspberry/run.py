@@ -8,18 +8,31 @@ import numpy as np
 import cv2
 from threading import Thread
 import json
+import sys
+import signal
 
 socket_url = 'http://10.42.0.1'
 post_url = 'http://10.42.0.1:5001'
 
+camera_info = {
+    "id": 1,
+}
+
+
+def signal_handler(sig, frame):
+    respond = requests.delete(
+        '{}/camera/active/{}'.format(post_url, camera_info['id']), timeout=2)
+    print(respond)
+    print('Exit gracefully')
+    sys.exit(0)
+
 
 if __name__ == '__main__':
-    camera_info = {
-        "id": 1,
-    }
+    # Handle signal
+    signal.signal(signal.SIGINT, signal_handler)
     # Notify server about camera
     respond = requests.post(
-        '{}/camera/active'.format(post_url), json=camera_info, timeout=4)
+        '{}/camera/active'.format(post_url), json=camera_info, timeout=2)
     print('Register camera with id: {} <== {}'.format(
         camera_info['id'], respond.json()))
     with SocketIO(socket_url, 5001, LoggingNamespace) as socketIO:
