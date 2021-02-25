@@ -30,7 +30,15 @@ const ProductPage = (props) => {
     <div className="content">
       <h1>Product management</h1>
       <div class="product">
-        {products.map(p => <ProductPanel data={p} key={p.id} />)}
+        {products.map(p => <ProductPanel
+          data={p}
+          key={p.id}
+          delete={() => {
+            const new_products = products.filter(product => product.id !== p.id);
+            console.log(new_products);
+            setProducts(new_products);
+          }}
+        />)}
         {add ? <ProductForm
           cancel={() => {
             setAdd(false);
