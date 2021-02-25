@@ -14,8 +14,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 
 CORS(app)
-# socketio = SocketIO(app, cors_allowed_origins="*", message_queue='redis://')
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", message_queue='redis://')
+# socketio = SocketIO(app, cors_allowed_origins="*")
 db = SQLAlchemy(app)
 
 
