@@ -12,6 +12,9 @@ class Product(db.Model):
         return "<Product(id = '%d', name='%s', price='%f')>" % (self.id, self.name, self.price)
 
     def to_dict(self):
+        return {'id': self.id, 'name': self.name, 'price': self.price}
+
+    def to_dict_bulk(self):
         return {
             'id': self.id, 'name': self.name, 'price': self.price,
             'images': [image.to_dict() for image in self.images]
@@ -131,11 +134,11 @@ class LogText(db.Model):
 
 
 class CameraProduct(db.Model):
-    __tablename__ = 'camera_productss'
+    __tablename__ = 'camera_products'
     product_id = db.Column(db.Integer, db.ForeignKey(
-        'cameras.id'), nullable=False, primary_key=True)
-    camera_id = db.Column(db.Integer, db.ForeignKey(
         'products.id'), nullable=False, primary_key=True)
+    camera_id = db.Column(db.Integer, db.ForeignKey(
+        'cameras.id'), nullable=False, primary_key=True)
     quantity = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):

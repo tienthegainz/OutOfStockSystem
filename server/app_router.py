@@ -122,7 +122,7 @@ def watch_product():
 @app.route('/product', methods=['GET'])
 def get_product():
     results = Product.query.all()
-    return jsonify({'success': True, 'products': [r.to_dict() for r in results]})
+    return jsonify({'success': True, 'products': [r.to_dict_bulk() for r in results]})
 
 
 @app.route('/product/<id>', methods=['DELETE'])
@@ -217,9 +217,24 @@ def get_camera():
 
 @app.route('/camera/detail', methods=['GET'])
 def get_camera_detail():
-    results = Camera.query.all()
-    # print(results)
-    return jsonify({'success': True, 'cameras': [result.to_dict() for result in results]})
+    results = db.session.query(Camera, CameraProduct, Product)\
+        .join(Camera, Camera.id == CameraProduct.camera_id)\
+        .join(Product, Product.id == CameraProduct.product_id)\
+        .all()
+    data = []
+    for camera, _, product in results:
+        new = True
+        for i in range(len(data)):
+            if camera.id == data[i]['id']:
+                data[i]['products'].append(product.to_dict())
+                new = False
+                break
+        if new:
+            a = camera.to_dict()
+            a['products'] = [product.to_dict()]
+            data.append(a)
+
+    return jsonify({'success': True, 'cameras': data})
 
 ######################## User API ########################
 
