@@ -18,8 +18,8 @@ celery = Celery(
     app.name, broker=app.config['CELERY_BROKER_URL'],
     backend=app.config['CELERY_RESULT_BACKEND'])
 
-fire_alarm = FireAlarm()
-# fire_alarm = None
+# fire_alarm = FireAlarm()
+fire_alarm = None
 firebase_app = pyrebase.initialize_app(FIREBASE_CONFIG)
 firebase_storage = firebase_app.storage()
 
@@ -36,7 +36,7 @@ def fire_alert(data, room):
         socketio.emit('fire', {'fire': result}, room=room)
         if result:
             t = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-            message = '[{}] Fire warning'.format(t)
+            message = '[{}] WARNING There may be fire. Please check'.format(t)
             socketio.emit(
                 'log', {'log': message})
             log = LogText(message=message, time=t, camera_id=room)
@@ -44,7 +44,7 @@ def fire_alert(data, room):
 
 
 @celery.task(ignore_result=True)
-def save_image_log(data, room):
+def handle_out_of_roi(data, room):
     socketio = SocketIO(app, cors_allowed_origins="*",
                         message_queue='redis://')
     print('Saving image and send log ...')
@@ -58,6 +58,35 @@ def save_image_log(data, room):
         # Image
         send_image = io.BytesIO(
             base64.b64decode(re.sub("data:image/jpeg;base64", '', data)))
+        image_name = random_name_generator() + '.jpg'
+        firebase_storage.child(
+            "images/{}".format(image_name)).put(send_image)
+        url = firebase_storage.child(
+            "images/{}".format(image_name)).get_url(None)
+
+        image = LogImage(url=url, time=t, camera_id=room)
+        db.session.add(image)
+        db.session.commit()
+
+
+@celery.task(ignore_result=True)
+def handle_missing_object(data, room):
+    socketio = SocketIO(app, cors_allowed_origins="*",
+                        message_queue='redis://')
+    print('Saving image and send log ...')
+    t = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+    with app.app_context():
+        # Log
+        logs = ['{}: {}'.format(c['name'], c['quantity'])
+                for c in data['missing']]
+        message = '[{}] WARNING: May be missing: {}. Please check. Saving image...'.format(
+            t, ', '.join(logs))
+        socketio.emit('log', {'log': message}, room=room)
+        log = LogText(message=message, time=t, camera_id=room)
+        db.session.add(log)
+        # Image
+        send_image = io.BytesIO(
+            base64.b64decode(re.sub("data:image/jpeg;base64", '', data['image'])))
         image_name = random_name_generator() + '.jpg'
         firebase_storage.child(
             "images/{}".format(image_name)).put(send_image)

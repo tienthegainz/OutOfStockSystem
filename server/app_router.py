@@ -7,7 +7,7 @@ from detect_engine.detector import Detector
 from search_engine.searcher import Searcher
 from search_engine.extractor import Extractor
 from tracker_engine.tracker import TrackerMulti
-from worker import save_image_product
+from worker import handle_missing_object, save_image_product
 from model import *
 from sqlalchemy import func
 
@@ -17,12 +17,12 @@ import numpy as np
 import re
 
 # Global param
-# detector = Detector()
-# extractor = Extractor()
-# searcher = Searcher()
-extractor = None
-searcher = None
-detector = None
+detector = Detector()
+extractor = Extractor()
+searcher = Searcher()
+# extractor = None
+# searcher = None
+# detector = None
 tracker = TrackerMulti()
 
 
@@ -86,6 +86,33 @@ def count_object(products):
             result[a]['quantity'] += 1
     return result
 
+
+def check_missing(products, camera_id):
+    cp = CameraProduct.query.filter(
+        CameraProduct.camera_id == camera_id).all()
+    require_products = [r.to_dict() for r in cp]
+    results = []
+    for rp in require_products:
+        quantity = 0
+        name = None
+        for product in products:
+            if rp['product_id'] == product['id']:
+                quantity = product['quantity']
+                name = product['name']
+        if rp['quantity'] > quantity:
+            if name is None:
+                product = Product.query.filter(
+                    Product.id == rp['product_id']).first()
+                if product is None:
+                    name = '*Unknown object'
+                else:
+                    name = product.name
+
+            results.append({'id': rp['product_id'], 'name': name,
+                            'quantity': rp['quantity']-quantity})
+
+    return results
+
 ######################## Products API ########################
 
 
@@ -101,6 +128,10 @@ def watch_product():
     tracker.clear_all_objects()
     # processing
     result_image, info, count = detect_search_object(image)
+    missing = check_missing(count, room)
+    if missing:
+        handle_missing_object.delay(
+            {'image': request_data['image'], 'missing': missing}, room)
     # logging
     logs = ['{}: {}'.format(c['name'], c['quantity']) for c in count]
     t = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
@@ -180,8 +211,8 @@ def add_active_camera():
     if camera is not None:
         camera.active = True
         camera.save_to_db()
-        cameras = Camera.query.all()
 
+        cameras = Camera.query.all()
         socketio.emit('camera_list', {'cameras': [
                       cam.to_dict() for cam in cameras if cam.active]}, broadcast=True)
     return jsonify({'success': True})
