@@ -1,33 +1,66 @@
 import React, { useState, useEffect } from "react";
 import './ProductAdd.css';
-import { Menu, Button, Dropdown } from 'antd';
+import { Menu, Button, Dropdown, InputNumber } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
+import { serverApi } from "../../../common/serverApi";
 
 const ProductAdd = (props) => {
 
-  const [data, setData] = useState({ id: null })
-  const allProducts = [
-    {
-      id: 1,
-      name: "Gucci Guilt INTENSE"
-    },
-    {
-      id: 2,
-      name: "Water bottle"
-    }
-  ]
+  const [data, setData] = useState({ id: null });
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const menu = () => <Menu>
-    {allProducts.map((e) => <Menu.Item key={e.id} onClick={() => setData(e)} >{e.name}</Menu.Item>)}
-  </Menu>;
+  useEffect(() => {
+    const getProduct = async () => {
+      let respond = await serverApi({ url: 'product' })
+      console.log(respond);
+      if (respond.status === 200) {
+        let data = respond.data.products.map(p => { return { id: p.id, name: p.name }; });
+        setAllProducts(data);
+      }
+    }
+    getProduct();
+  }, [])
 
   return (
     <div className="add-box" >
       <p>Add new product: </p>
-      <Dropdown overlay={menu} placement="bottomLeft">
-        <Button>{data.id === null ? "Choose product" : data.name}<DownOutlined /></Button>
+      <Dropdown
+        overlay={<Menu>
+          {allProducts.map((e) => <Menu.Item key={e.id} onClick={() => setData(e)} >{e.name}</Menu.Item>)}
+        </Menu>}
+        placement="bottomLeft"
+        style={{ marginRight: '10px' }}
+      >
+        <Button style={{ marginRight: '10px' }} >{data.id === null ? "Choose product" : data.name}<DownOutlined /></Button>
       </Dropdown>
-      <Button type="primary" style={{ marginLeft: "10px" }} >Confirm</Button>
+      <InputNumber min={1} max={5}
+        style={{ marginRight: '10px' }}
+        onChange={(value) => setData({ ...data, quantity: value })}
+      />
+      <Button type="primary"
+        disabled={!(data.id && data.quantity)}
+        loading={loading}
+        onClick={async () => {
+          setLoading(true);
+          let respond = await serverApi({
+            url: '/camera/product',
+            data: {
+              camera_id: props.cameraId,
+              product_id: data.id,
+              quantity: data.quantity
+            },
+            method: 'post'
+          })
+          console.log(respond);
+          if (respond.status === 200) {
+            props.getData();
+          }
+          props.collapse();
+        }}
+      >
+        Confirm
+      </Button>
     </div>
   );
 }
