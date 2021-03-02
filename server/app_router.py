@@ -17,12 +17,12 @@ import numpy as np
 import re
 
 # Global param
-detector = Detector()
-extractor = Extractor()
-searcher = Searcher()
-# extractor = None
-# searcher = None
-# detector = None
+# detector = Detector()
+# extractor = Extractor()
+# searcher = Searcher()
+extractor = None
+searcher = None
+detector = None
 tracker = TrackerMulti()
 
 
@@ -215,26 +215,86 @@ def get_camera():
     return jsonify({'success': True, 'cameras': [result.to_dict() for result in results]})
 
 
-@app.route('/camera/detail', methods=['GET'])
-def get_camera_detail():
+@app.route('/camera/product', methods=['GET'])
+def get_camera_product():
     results = db.session.query(Camera, CameraProduct, Product)\
         .join(Camera, Camera.id == CameraProduct.camera_id)\
         .join(Product, Product.id == CameraProduct.product_id)\
         .all()
-    data = []
-    for camera, _, product in results:
-        new = True
-        for i in range(len(data)):
-            if camera.id == data[i]['id']:
-                data[i]['products'].append(product.to_dict())
-                new = False
-                break
-        if new:
-            a = camera.to_dict()
-            a['products'] = [product.to_dict()]
-            data.append(a)
+    if results:
+        data = []
+        for camera, info, product in results:
+            new = True
+            product_info = product.to_dict()
+            product_info['quantity'] = info.quantity
+            for i in range(len(data)):
+                if camera.id == data[i]['id']:
+                    data[i]['products'].append(product_info)
+                    new = False
+                    break
+            if new:
+                a = camera.to_dict()
+                a['products'] = [product_info]
+                data.append(a)
 
-    return jsonify({'success': True, 'cameras': data})
+        return jsonify({'success': True, 'cameras': data})
+    else:
+        cameras = Camera.query.all()
+        data = []
+        for camera in cameras:
+            c = camera.to_dict()
+            c['products'] = []
+            data.append(c)
+        return jsonify({'success': True, 'cameras': data})
+
+
+@app.route('/camera/product', methods=['POST'])
+def add_camera_product():
+    request_data = request.get_json()
+    camera_product = CameraProduct.query.filter(CameraProduct.camera_id == request_data['camera_id'])\
+        .filter(CameraProduct.product_id == request_data['product_id']).first()
+    if camera_product is not None:
+        camera_product.quantity += request_data['quantity']
+        camera_product.save_to_db()
+    else:
+        camera_product = CameraProduct(camera_id=request_data['camera_id'],
+                                       product_id=request_data['product_id'],
+                                       quantity=request_data['quantity'])
+        try:
+            camera_product.save_to_db()
+        except Exception as err:
+            return jsonify({'success': False, 'error': err})
+
+    return jsonify({'success': True, 'added': camera_product.to_dict()})
+
+
+@app.route('/camera/<camera_id>/product/<product_id>', methods=['PUT'])
+def change_product_quantity(camera_id, product_id):
+    request_data = request.get_json()
+    quantity = request_data['quantity'] if 'quantity' in request_data else None
+    if quantity is None:
+        return jsonify({'success': False, 'error': 'Product quantity not found'}), 400
+
+    result = CameraProduct.query.filter(CameraProduct.camera_id == camera_id)\
+        .filter(CameraProduct.product_id == product_id).first()
+    if result is None:
+        return jsonify({'success': False, 'error': 'Product not found'}), 400
+    else:
+        result.quantity = quantity
+        result.save_to_db()
+        return jsonify({'success': True, 'product': result.to_dict()})
+
+
+@app.route('/camera/<camera_id>/product/<product_id>', methods=['DELETE'])
+def delete_camera_product(camera_id, product_id):
+    result = CameraProduct.query.filter(CameraProduct.camera_id == camera_id)\
+        .filter(CameraProduct.product_id == product_id).first()
+    if result is None:
+        return jsonify({'success': False, 'error': 'Product not found'}), 400
+    else:
+        result.delete_in_db()
+        return jsonify({'success': True, 'deleted': result.to_dict()})
+
 
 ######################## User API ########################
 
