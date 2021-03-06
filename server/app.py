@@ -3,6 +3,8 @@ from flask_socketio import SocketIO
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from config import DATABASE
+from flask_jwt_extended import JWTManager
+from datetime import timedelta
 
 
 app = Flask(__name__)
@@ -11,12 +13,14 @@ app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(
     DATABASE['path']) if DATABASE['type'] == 'sqlite3' else ''
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config["JWT_SECRET_KEY"] = "thesis-20202"
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=60)
 
 
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", message_queue='redis://')
-# socketio = SocketIO(app, cors_allowed_origins="*")
 db = SQLAlchemy(app)
+jwt = JWTManager(app)
 
 
 if __name__ == '__main__':
