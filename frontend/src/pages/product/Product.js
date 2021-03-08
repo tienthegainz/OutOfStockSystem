@@ -3,21 +3,26 @@ import { Button } from 'antd';
 import ProductPanel from "../../components/ProductPanel/ProductPanel";
 import './Product.css';
 import ProductForm from "../../components/ProductForm/ProductForm";
-import { serverApi } from "../../common/serverApi";
+import { serverApiWithToken } from "../../common/serverApi";
+import { useDispatch } from "react-redux";
+import allActions from "../../actions";
 
 
 const ProductPage = (props) => {
 
   const [products, setProducts] = useState([]);
-
   const [add, setAdd] = useState(false);
+  const dispatch = useDispatch();
 
   const getData = async () => {
-    let respond = await serverApi({ url: '/product' })
+    let respond = await serverApiWithToken({ url: '/product' })
     console.log(respond);
-    if (respond.status === 200) {
+    if (respond.status === 200 && respond.data.success === true) {
       let data = respond.data.products;
       setProducts(data);
+    }
+    else if (respond.errorCode === 401) {
+      dispatch(allActions.userActions.logout());
     }
   };
 

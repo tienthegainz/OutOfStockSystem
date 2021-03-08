@@ -2,21 +2,27 @@ import React, { useState, useEffect } from "react";
 import './ProductAdd.css';
 import { Menu, Button, Dropdown, InputNumber } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
-import { serverApi } from "../../../common/serverApi";
+import { serverApiWithToken } from "../../../common/serverApi";
+import { useDispatch } from "react-redux";
+import allActions from "../../../actions";
 
 const ProductAdd = (props) => {
 
   const [data, setData] = useState({ id: null });
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const getProduct = async () => {
-      let respond = await serverApi({ url: 'product' })
+      let respond = await serverApiWithToken({ url: 'product' })
       console.log(respond);
-      if (respond.status === 200) {
+      if (respond.status === 200 && respond.data.success === true) {
         let data = respond.data.products.map(p => { return { id: p.id, name: p.name }; });
         setAllProducts(data);
+      }
+      else if (respond.errorCode === 401) {
+        dispatch(allActions.userActions.logout());
       }
     }
     getProduct();
@@ -43,7 +49,7 @@ const ProductAdd = (props) => {
         loading={loading}
         onClick={async () => {
           setLoading(true);
-          let respond = await serverApi({
+          let respond = await serverApiWithToken({
             url: '/camera/product',
             data: {
               camera_id: props.cameraId,

@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Form, Input, InputNumber, Button, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import './ProductForm.css'
-import { serverApi } from "../../common/serverApi";
+import { serverApiWithToken } from "../../common/serverApi";
+import { useDispatch } from "react-redux";
+import allActions from "../../actions";
 
 const normFile = (e) => {
   // console.log('Upload: ', e)
@@ -27,7 +29,8 @@ const getBase64 = (file) => {
 
 const ProductForm = (props) => {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
 
   const onFinish = (values) => {
     const upload = async (values) => {
@@ -39,8 +42,11 @@ const ProductForm = (props) => {
       }
       values.images = images;
       console.log('Upload: ', values);
-      const respond = await serverApi({ url: '/product', data: values, method: 'post' });
+      const respond = await serverApiWithToken({ url: '/product', data: values, method: 'post' });
       console.log(respond);
+      if (respond.errorCode === 401) {
+        dispatch(allActions.userActions.logout());
+      }
       props.cancel();
     }
     upload(values);

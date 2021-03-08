@@ -4,8 +4,9 @@ import './ProductWatcher.css';
 import { Menu, Dropdown, Button } from 'antd';
 import { DownOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import CameraReadyModal from "../../components/CameraReadyModal/CameraReadyModal";
-import axios from 'axios'
-import { serverApi } from "../../common/serverApi";
+import { serverApiWithToken } from "../../common/serverApi";
+import { useDispatch } from "react-redux";
+import allActions from "../../actions";
 
 const ENDPOINT = "http://0.0.0.0:5001"
 
@@ -18,7 +19,7 @@ const ProductWatcherPage = () => {
   const [fire, setFire] = useState(false);
   const [cameraList, setCameraList] = useState([]);
   const [camera, setCamera] = useState();
-  // const [socket, setSocket] = useState();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     // handle CCTV image
@@ -86,11 +87,13 @@ const ProductWatcherPage = () => {
 
   useEffect(() => {
     const getAllCamera = async () => {
-      let result = await serverApi({ url: '/camera/active' });
-      if (!result.error) {
+      let respond = await serverApiWithToken({ url: '/camera/active' });
+      if (respond.status === 200 && respond.data.success === true) {
         // console.log(result);
-        setCameraList(result.data.cameras)
-
+        setCameraList(respond.data.cameras)
+      }
+      else if (respond.errorCode === 401) {
+        dispatch(allActions.userActions.logout());
       }
     }
     getAllCamera();

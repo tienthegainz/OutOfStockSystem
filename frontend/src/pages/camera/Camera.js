@@ -1,18 +1,24 @@
 import React, { useState, useEffect } from "react";
 import './Camera.css';
 import CameraPanel from "../../components/CameraPanel/CameraPanel";
-import { serverApi } from "../../common/serverApi";
+import { serverApiWithToken } from "../../common/serverApi";
+import { useDispatch } from "react-redux";
+import allActions from "../../actions";
 
 const CameraPage = () => {
 
   const [cameras, setCameras] = useState([]);
+  const dispatch = useDispatch();
 
   const getData = async () => {
-    let respond = await serverApi({ url: '/camera/product' })
+    let respond = await serverApiWithToken({ url: '/camera/product' })
     console.log(respond);
-    if (respond.status === 200) {
+    if (respond.status === 200 && respond.data.success === true) {
       let data = respond.data.cameras;
       setCameras(data);
+    }
+    else if (respond.errorCode === 401) {
+      dispatch(allActions.userActions.logout());
     }
   };
 

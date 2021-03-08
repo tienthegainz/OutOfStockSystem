@@ -4,9 +4,9 @@
   position: relative;
 }
 
-.content h1 {
+h1 {
   text-align: center;
-  color: #1890ff;
+  color: #1890ff !important;
   font-size: 40px;
 }
 

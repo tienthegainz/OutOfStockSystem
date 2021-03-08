@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import './ProductPanel.css';
 import { Collapse, Button } from 'antd';
 import { DeleteOutlined, LeftOutlined, RightOutlined, EditOutlined } from '@ant-design/icons';
-import { serverApi } from "../../common/serverApi";
+import { serverApiWithToken } from "../../common/serverApi";
 import DeleteModal from "../DeleteModal/DeleteModal";
+import { useDispatch } from "react-redux";
+import allActions from "../../actions";
 
 const { Panel } = Collapse;
 
@@ -11,13 +13,17 @@ const ProductPanel = (props) => {
 
   const [edit, setEdit] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const dispatch = useDispatch();
 
   return (<React.Fragment>
     {deleteConfirm ? <DeleteModal
       visible={deleteConfirm}
       ok={async () => {
-        let respond = await serverApi({ url: '/product/' + props.data.id, method: 'delete' });
+        let respond = await serverApiWithToken({ url: '/product/' + props.data.id, method: 'delete' });
         console.log(respond);
+        if (respond.errorCode === 401) {
+          dispatch(allActions.userActions.logout());
+        }
         setDeleteConfirm(false);
         props.delete();
       }}

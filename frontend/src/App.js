@@ -10,11 +10,14 @@ import NavBar from "./components/NavBar/NavBar";
 import "./App.css";
 import LogPage from "./pages/log/Log";
 import ProductPage from "./pages/product/Product";
+import LoginPage from "./pages/login/Login";
+import { useSelector } from 'react-redux';
 
 const App = () => {
+  const userInfo = useSelector(state => state.currentUser);
 
-  return (
-    <Router>
+  return (<React.Fragment>
+    {userInfo.isLoggedIn ? <Router>
       <NavBar />
       <Switch>
         <Route path="/log">
@@ -30,8 +33,8 @@ const App = () => {
           <ProductWatcherPage />
         </Route>
       </Switch>
-
-    </Router>
+    </Router> : <LoginPage />}
+  </React.Fragment >
   );
 }
 

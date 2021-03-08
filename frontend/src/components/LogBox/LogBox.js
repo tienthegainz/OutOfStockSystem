@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { serverApi } from "../../common/serverApi";
+import { useDispatch } from "react-redux";
+import allActions from "../../actions";
+import { serverApiWithToken } from "../../common/serverApi";
 import './LogBox.css';
 
 
 const LogBox = (props) => {
 
   const [logs, setLogs] = useState([]);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const getData = async (id, date) => {
@@ -13,10 +16,13 @@ const LogBox = (props) => {
         "from": date + " 00:00:00",
         "to": date + " 23:59:99"
       };
-      let respond = await serverApi({ url: '/log/text/' + id, data: data, method: 'post' })
+      let respond = await serverApiWithToken({ url: '/log/text/' + id, data: data, method: 'post' })
       console.log(respond);
-      if (respond.status === 200) {
+      if (respond.status === 200 && respond.data.success === true) {
         setLogs(respond.data.data);
+      }
+      else if (respond.errorCode === 401) {
+        dispatch(allActions.userActions.logout());
       }
     };
     if (props.query && props.cameraId.id)

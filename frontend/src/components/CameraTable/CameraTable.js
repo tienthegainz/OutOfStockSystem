@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Table, Space, InputNumber } from 'antd';
 import { DeleteOutlined, EditOutlined, StopOutlined, CheckOutlined } from '@ant-design/icons';
 import './CameraTable.css';
-import { serverApi } from "../../common/serverApi";
+import { serverApiWithToken } from "../../common/serverApi";
 import DeleteModal from "../DeleteModal/DeleteModal";
 import EditModal from "../EditModal/EditModal";
+import allActions from "../../actions";
+import { useDispatch } from "react-redux";
 
 const CameraTable = (props) => {
 
@@ -12,9 +14,10 @@ const CameraTable = (props) => {
     return { ...x, key: x.id }
   });
 
-  const [editRows, setEditRows] = useState([]);
+  const [editRow, setEditRow] = useState({ id: null });
   // 0: normal, 1: edit confirm, 2: delete confirm
   const [actionInfo, setActionInfo] = useState({ display: 0 });
+  const dispatch = useDispatch();
 
   const columns = [
     {
@@ -32,14 +35,12 @@ const CameraTable = (props) => {
       dataIndex: 'quantity',
       key: 'quantity',
       render: (text, record) => (
-        editRows.map(row => row.id).includes(record.id) ? <InputNumber
+        (editRow.id === record.id) ? <InputNumber
           min={1}
           max={5}
           defaultValue={record.quantity}
           onChange={(value) => {
-            let newValue = { id: record.id, quantity: value }
-            let newEditRows = editRows.filter(row => row.id !== record.id);
-            setEditRows([...newEditRows, newValue]);
+            setEditRow({ ...editRow, quantity: value });
           }}
         /> : record.quantity
       )
@@ -54,13 +55,13 @@ const CameraTable = (props) => {
       key: 'action',
       render: (text, record) => (
         <Space size="middle">
-          {editRows.map(row => row.id).includes(record.id) ? <React.Fragment>
+          {(editRow.id === record.id) ? <React.Fragment>
             <CheckOutlined
               style={{ color: 'green' }}
               onClick={() => {
                 setActionInfo({
                   display: 1,
-                  quantity: editRows.find(row => row.id === record.id).quantity,
+                  quantity: editRow.quantity,
                   productId: record.id,
                   name: record.name
                 })
@@ -68,12 +69,12 @@ const CameraTable = (props) => {
             />
             <StopOutlined
               style={{ color: 'red' }}
-              onClick={() => setEditRows(editRows.filter(r => r.id !== record.id))}
+              onClick={() => setEditRow({ id: null })}
             />
           </React.Fragment> : <React.Fragment>
               < EditOutlined
                 style={{ color: 'blue' }}
-                onClick={() => setEditRows([...editRows, { id: record.id, quantity: record.quantity }])}
+                onClick={() => setEditRow({ id: record.id, quantity: record.quantity })}
               />
               < DeleteOutlined
                 style={{ color: 'red' }}
@@ -96,16 +97,20 @@ const CameraTable = (props) => {
       cancel={() => setActionInfo({ display: 0 })}
       name={actionInfo.name}
       ok={async () => {
-        let respond = await serverApi({
+        let respond = await serverApiWithToken({
           url: '/camera/' + props.cameraId + '/product/' + actionInfo.productId,
           data: { quantity: actionInfo.quantity },
           method: 'put'
         })
         console.log(respond);
-        if (respond.status === 200) {
+        if (respond.status === 200 && respond.data.success === true) {
           props.getData();
         }
+        else if (respond.errorCode === 401) {
+          dispatch(allActions.userActions.logout());
+        }
         setActionInfo({ display: 0 });
+        setEditRow({ id: null });
       }}
       visible={actionInfo.display === 1}
     />
@@ -114,15 +119,19 @@ const CameraTable = (props) => {
       visible={actionInfo.display === 2}
       name={actionInfo.name}
       ok={async () => {
-        let respond = await serverApi({
+        let respond = await serverApiWithToken({
           url: '/camera/' + props.cameraId + '/product/' + actionInfo.productId,
           method: 'delete'
         })
         console.log(respond);
-        if (respond.status === 200) {
+        if (respond.status === 200 && respond.data.success === true) {
           props.getData();
         }
+        else if (respond.errorCode === 401) {
+          dispatch(allActions.userActions.logout());
+        }
         setActionInfo({ display: 0 });
+        setEditRow({ id: null });
       }}
     />
     <Table columns={columns} dataSource={data} />
