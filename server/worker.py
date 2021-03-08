@@ -12,14 +12,15 @@ import pyrebase
 import io
 import base64
 import re
+import os
 
 
 celery = Celery(
     app.name, broker=app.config['CELERY_BROKER_URL'],
     backend=app.config['CELERY_RESULT_BACKEND'])
 
-# fire_alarm = FireAlarm()
-fire_alarm = None
+fire_alarm = FireAlarm() if not (
+    os.environ.get('SERVER_STATE') == 'running') else None
 firebase_app = pyrebase.initialize_app(FIREBASE_CONFIG)
 firebase_storage = firebase_app.storage()
 

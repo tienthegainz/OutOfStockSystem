@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from config import DATABASE
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
+import os
 
 
 app = Flask(__name__)
@@ -24,6 +25,7 @@ jwt = JWTManager(app)
 
 
 if __name__ == '__main__':
+    os.environ['SERVER_STATE'] = 'running'
     from app_router import *
     from app_socket import *
     socketio.run(app, host='0.0.0.0', port='5001',
