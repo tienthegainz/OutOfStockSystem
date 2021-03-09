@@ -21,9 +21,6 @@ const ProductPanel = (props) => {
       ok={async () => {
         let respond = await serverApiWithToken({ url: '/product/' + props.data.id, method: 'delete' });
         console.log(respond);
-        if (respond.errorCode === 401) {
-          dispatch(allActions.userActions.logout());
-        }
         setDeleteConfirm(false);
         props.delete();
       }}

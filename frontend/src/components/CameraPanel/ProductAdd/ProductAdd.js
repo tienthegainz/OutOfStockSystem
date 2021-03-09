@@ -21,9 +21,6 @@ const ProductAdd = (props) => {
         let data = respond.data.products.map(p => { return { id: p.id, name: p.name }; });
         setAllProducts(data);
       }
-      else if (respond.errorCode === 401) {
-        dispatch(allActions.userActions.logout());
-      }
     }
     getProduct();
   }, [])

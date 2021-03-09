@@ -38,9 +38,6 @@ const ImageLog = (props) => {
       if (respond.status === 200 && respond.data.success === true) {
         setImages(renderImage(respond.data.data));
       }
-      else if (respond.errorCode === 401) {
-        dispatch(allActions.userActions.logout());
-      }
     };
     if (props.query && props.cameraId.id)
       getData(props.cameraId.id, props.date);

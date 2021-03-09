@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Table, Space, InputNumber } from 'antd';
+import { Table, Space, Input } from 'antd';
 import { DeleteOutlined, EditOutlined, StopOutlined, CheckOutlined } from '@ant-design/icons';
-import './CameraTable.css';
+import './UserTable.style.css';
 import { serverApiWithToken } from "../../common/serverApi";
 import DeleteModal from "../DeleteModal/DeleteModal";
 import EditModal from "../EditModal/EditModal";
 import allActions from "../../actions";
 import { useDispatch } from "react-redux";
 
-const CameraTable = (props) => {
+const UserTable = () => {
 
-  const data = props.data.map(x => {
-    return { ...x, key: x.id }
-  });
 
+  const [userData, setUserData] = useState([]);
   const [editRow, setEditRow] = useState({ id: null });
   // 0: normal, 1: edit confirm, 2: delete confirm
   const [actionInfo, setActionInfo] = useState({ display: 0 });
@@ -21,34 +19,36 @@ const CameraTable = (props) => {
 
   const columns = [
     {
-      title: 'Product ID',
+      title: 'User ID',
       dataIndex: 'id',
       key: 'id',
     },
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
+      title: 'Username',
+      dataIndex: 'username',
+      key: 'username',
     },
     {
-      title: 'Quantity',
-      dataIndex: 'quantity',
-      key: 'quantity',
+      title: 'Password',
+      dataIndex: 'password',
+      key: 'password',
+      colSpan: 1,
       render: (text, record) => (
-        (editRow.id === record.id) ? <InputNumber
-          min={1}
-          max={5}
-          defaultValue={record.quantity}
+        (editRow.id === record.id) ? <Input.Password
+          placeholder="input password"
           onChange={(value) => {
-            setEditRow({ ...editRow, quantity: value });
+            setEditRow({ ...editRow, password: value })
           }}
-        /> : record.quantity
+        /> : <span>*******</span>
       )
     },
     {
-      title: 'Price',
-      dataIndex: 'price',
-      key: 'price',
+      title: 'Role',
+      dataIndex: 'role',
+      key: 'role',
+      render: (text, record) => (
+        record.admin ? <span>Admin</span> : <span>Employee</span>
+      )
     },
     {
       title: 'Action',
@@ -61,9 +61,9 @@ const CameraTable = (props) => {
               onClick={() => {
                 setActionInfo({
                   display: 1,
-                  quantity: editRow.quantity,
-                  productId: record.id,
-                  name: record.name
+                  userId: editRow.id,
+                  username: editRow.username,
+                  password: editRow.password
                 })
               }}
             />
@@ -74,15 +74,15 @@ const CameraTable = (props) => {
           </React.Fragment> : <React.Fragment>
               < EditOutlined
                 style={{ color: 'blue' }}
-                onClick={() => setEditRow({ id: record.id, quantity: record.quantity })}
+                onClick={() => setEditRow({ id: record.id, username: record.username })}
               />
               < DeleteOutlined
                 style={{ color: 'red' }}
                 onClick={() => {
                   setActionInfo({
                     display: 2,
-                    productId: record.id,
-                    name: record.name
+                    userId: editRow.id,
+                    username: editRow.username
                   })
                 }}
               />
@@ -92,20 +92,36 @@ const CameraTable = (props) => {
     },
   ];
 
+  const getData = async () => {
+    let respond = await serverApiWithToken({ url: '/user' })
+    console.log(respond);
+    if (respond.status === 200 && respond.data.success === true) {
+      let data = respond.data.users.map(user => {
+        return { ...user, key: user.id };
+      });
+      setUserData(data);
+    }
+  };
+
+  useEffect(() => {
+    getData();
+  }, [])
+
+
   return (<React.Fragment>
     <EditModal
       cancel={() => setActionInfo({ display: 0 })}
       name={actionInfo.name}
       ok={async () => {
-        let respond = await serverApiWithToken({
-          url: '/camera/' + props.cameraId + '/product/' + actionInfo.productId,
-          data: { quantity: actionInfo.quantity },
-          method: 'put'
-        })
-        console.log(respond);
-        if (respond.status === 200 && respond.data.success === true) {
-          props.getData();
-        }
+        // let respond = await serverApiWithToken({
+        //   url: '/camera/' + props.cameraId + '/product/' + actionInfo.productId,
+        //   data: { quantity: actionInfo.quantity },
+        //   method: 'put'
+        // })
+        // console.log(respond);
+        // if (respond.status === 200 && respond.data.success === true) {
+        //   props.getData();
+        // }
         setActionInfo({ display: 0 });
         setEditRow({ id: null });
       }}
@@ -116,21 +132,21 @@ const CameraTable = (props) => {
       visible={actionInfo.display === 2}
       name={actionInfo.name}
       ok={async () => {
-        let respond = await serverApiWithToken({
-          url: '/camera/' + props.cameraId + '/product/' + actionInfo.productId,
-          method: 'delete'
-        })
-        console.log(respond);
-        if (respond.status === 200 && respond.data.success === true) {
-          props.getData();
-        }
+        // let respond = await serverApiWithToken({
+        //   url: '/camera/' + props.cameraId + '/product/' + actionInfo.productId,
+        //   method: 'delete'
+        // })
+        // console.log(respond);
+        // if (respond.status === 200 && respond.data.success === true) {
+        //   props.getData();
+        // }
         setActionInfo({ display: 0 });
         setEditRow({ id: null });
       }}
     />
-    <Table columns={columns} dataSource={data} />
+    <Table className='user-table' columns={columns} dataSource={userData} />
   </React.Fragment>
   );
 }
 
-export default CameraTable;
+export default UserTable;

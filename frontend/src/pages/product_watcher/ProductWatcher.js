@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import socketIOClient from "socket.io-client";
+import { io } from "socket.io-client";
 import './ProductWatcher.css';
 import { Menu, Dropdown, Button } from 'antd';
 import { DownOutlined, VideoCameraOutlined } from '@ant-design/icons';
@@ -23,7 +23,7 @@ const ProductWatcherPage = () => {
 
   useEffect(() => {
     // handle CCTV image
-    const socket = socketIOClient(ENDPOINT);
+    const socket = io(ENDPOINT);
     if (camera)
       socket.emit('join', { id: camera.id });
     socket.on('image', data => {
@@ -39,7 +39,7 @@ const ProductWatcherPage = () => {
 
   useEffect(() => {
     // handle CCTV log
-    const socket = socketIOClient(ENDPOINT);
+    const socket = io(ENDPOINT);
     if (camera)
       socket.emit('join', { id: camera.id });
     socket.on('log', data => {
@@ -58,7 +58,7 @@ const ProductWatcherPage = () => {
 
   useEffect(() => {
     // handle image is sending effect
-    const socket = socketIOClient(ENDPOINT);
+    const socket = io(ENDPOINT);
     if (camera)
       socket.emit('join', { id: camera.id });
     socket.on('ready', data => {
@@ -72,7 +72,7 @@ const ProductWatcherPage = () => {
 
   useEffect(() => {
     // handle fire warning
-    const socket = socketIOClient(ENDPOINT);
+    const socket = io(ENDPOINT);
     if (camera)
       socket.emit('join', { id: camera.id });
     socket.on('fire', data => {
@@ -92,12 +92,9 @@ const ProductWatcherPage = () => {
         // console.log(result);
         setCameraList(respond.data.cameras)
       }
-      else if (respond.errorCode === 401) {
-        dispatch(allActions.userActions.logout());
-      }
     }
     getAllCamera();
-    const camera_socket = socketIOClient(ENDPOINT);
+    const camera_socket = io(ENDPOINT);
     camera_socket.on('camera_list', data => {
       console.log(data);
       setCameraList(data.cameras);

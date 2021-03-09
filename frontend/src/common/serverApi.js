@@ -1,4 +1,5 @@
 import axios from 'axios';
+import allActions from '../actions';
 import { store } from '../store'
 
 
@@ -88,6 +89,24 @@ export const serverApiWithToken = async ({ url, method = 'get', data = null }) =
     return result;
   }
   catch (err) {
-    return { errorCode: err.response.status };
+    if (err.response) {
+      // Request made and server responded
+      if (err.response.status === 401) {
+        store.dispatch(allActions.userActions.logout());
+      }
+      console.log(err.response.data);
+      console.log(err.response.status);
+      console.log(err.response.headers);
+      return { success: false };
+    } else if (err.request) {
+      // The request was made but no response was received
+      console.log(err.request);
+      return { success: false };
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.log('Error', err.message);
+      return { success: false };
+    }
+
   }
 }

@@ -21,9 +21,6 @@ const ProductPage = (props) => {
       let data = respond.data.products;
       setProducts(data);
     }
-    else if (respond.errorCode === 401) {
-      dispatch(allActions.userActions.logout());
-    }
   };
 
   useEffect(() => {

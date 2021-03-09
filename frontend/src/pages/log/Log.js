@@ -27,9 +27,6 @@ const LogPage = () => {
         let data = respond.data.cameras;
         setAllCamera(data);
       }
-      else if (respond.errorCode === 401) {
-        dispatch(allActions.userActions.logout());
-      }
     };
     getData();
   }, [])

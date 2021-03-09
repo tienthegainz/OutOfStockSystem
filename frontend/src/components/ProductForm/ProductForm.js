@@ -44,9 +44,6 @@ const ProductForm = (props) => {
       console.log('Upload: ', values);
       const respond = await serverApiWithToken({ url: '/product', data: values, method: 'post' });
       console.log(respond);
-      if (respond.errorCode === 401) {
-        dispatch(allActions.userActions.logout());
-      }
       props.cancel();
     }
     upload(values);

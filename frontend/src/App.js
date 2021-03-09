@@ -12,6 +12,7 @@ import LogPage from "./pages/log/Log";
 import ProductPage from "./pages/product/Product";
 import LoginPage from "./pages/login/Login";
 import { useSelector } from 'react-redux';
+import UserPage from "./pages/user/User";
 
 const App = () => {
   const userInfo = useSelector(state => state.currentUser);
@@ -20,16 +21,22 @@ const App = () => {
     {userInfo.isLoggedIn ? <Router>
       <NavBar />
       <Switch>
-        <Route path="/log">
+        <Route exact path="/log">
           <LogPage />
         </Route>
-        <Route path="/camera">
+        <Route exact path="/camera">
           <CameraPage />
         </Route>
-        <Route path="/product">
+        <Route exact path="/product">
           <ProductPage />
         </Route>
-        <Route path="/">
+        <Route exact path="/product">
+          <ProductPage />
+        </Route>
+        <Route exact path="/user">
+          <UserPage />
+        </Route>
+        <Route exact path={["/", "/watcher"]} >
           <ProductWatcherPage />
         </Route>
       </Switch>

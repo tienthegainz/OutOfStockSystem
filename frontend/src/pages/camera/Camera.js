@@ -17,9 +17,6 @@ const CameraPage = () => {
       let data = respond.data.cameras;
       setCameras(data);
     }
-    else if (respond.errorCode === 401) {
-      dispatch(allActions.userActions.logout());
-    }
   };
 
   useState(() => {
