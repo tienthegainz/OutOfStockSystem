@@ -11,11 +11,32 @@ import "./App.css";
 import LogPage from "./pages/log/Log";
 import ProductPage from "./pages/product/Product";
 import LoginPage from "./pages/login/Login";
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import UserPage from "./pages/user/User";
+import { notification } from 'antd';
+import allActions from "./actions";
 
 const App = () => {
   const userInfo = useSelector(state => state.currentUser);
+  const notiInfo = useSelector(state => state.notification);
+  const dispatch = useDispatch();
+
+  const openNotification = (title, message) => {
+    notification.error({
+      message: title,
+      description: message,
+      duration: 3,
+      placement: 'bottomRight'
+    });
+  };
+
+  useEffect(() => {
+    if (notiInfo.trigger) {
+      console.log('Trigger: ', notiInfo);
+      openNotification(notiInfo.title, notiInfo.message);
+      dispatch(allActions.notiActions.cancel());
+    }
+  }, [notiInfo]);
 
   return (<React.Fragment>
     {userInfo.isLoggedIn ? <Router>

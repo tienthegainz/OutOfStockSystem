@@ -12,10 +12,7 @@ const LoginPage = () => {
 
   const login = async (values) => {
     const respond = await serverApi({ url: '/login', method: 'post', data: values });
-    if (respond.errorCode) {
-      console.log('Error: ', respond.errorCode);
-    }
-    else if (respond.data.success) {
+    if (respond.data && respond.data.success) {
       // TODO: login and use Redux
       const token = respond.data.access_token;
       const user = respond.data.user;
@@ -23,9 +20,6 @@ const LoginPage = () => {
         token: token,
         user: user
       }));
-    }
-    else {
-      console.log('Fail msg: ', respond.data.msg);
     }
   };
 
