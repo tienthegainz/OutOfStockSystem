@@ -3,8 +3,7 @@ import { Form, Input, InputNumber, Button, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import './ProductForm.css'
 import { serverApiWithToken } from "../../common/serverApi";
-import { useDispatch } from "react-redux";
-import allActions from "../../actions";
+
 
 const normFile = (e) => {
   // console.log('Upload: ', e)
@@ -30,7 +29,6 @@ const getBase64 = (file) => {
 const ProductForm = (props) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const dispatch = useDispatch();
 
   const onFinish = (values) => {
     const upload = async (values) => {
@@ -44,6 +42,7 @@ const ProductForm = (props) => {
       console.log('Upload: ', values);
       const respond = await serverApiWithToken({ url: '/product', data: values, method: 'post' });
       console.log(respond);
+      props.getData();
       props.cancel();
     }
     upload(values);

@@ -5,8 +5,6 @@ import './CameraTable.css';
 import { serverApiWithToken } from "../../common/serverApi";
 import DeleteModal from "../DeleteModal/DeleteModal";
 import EditModal from "../EditModal/EditModal";
-import allActions from "../../actions";
-import { useDispatch } from "react-redux";
 
 const CameraTable = (props) => {
 
@@ -17,7 +15,6 @@ const CameraTable = (props) => {
   const [editRow, setEditRow] = useState({ id: null });
   // 0: normal, 1: edit confirm, 2: delete confirm
   const [actionInfo, setActionInfo] = useState({ display: 0 });
-  const dispatch = useDispatch();
 
   const columns = [
     {

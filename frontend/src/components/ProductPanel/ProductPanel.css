@@ -43,3 +43,12 @@ p {
   font-style: italic;
   color: slategray;
 }
+
+.product-edit-button {
+  color: #ffffff;
+  text-align: center;
+  font-size: 20px;
+  width: fit-content;
+  height: fit-content;
+  margin: auto;
+}

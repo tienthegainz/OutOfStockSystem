@@ -16,7 +16,7 @@ const EditModal = (props) => {
 
   return (<React.Fragment>
     <Modal
-      title="Delete confirm"
+      title="Edit confirm"
       visible={props.visible}
       onOk={handleOk}
       confirmLoading={confirmLoading}

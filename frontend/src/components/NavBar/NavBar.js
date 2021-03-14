@@ -44,7 +44,7 @@ const NavBar = (props) => {
           <Link to="/product">Product</Link>
         </Menu.Item>
         {isAdmin ? <Menu.Item key="5" icon={<UserOutlined />}>
-          <Link to="/user">User</Link>
+          <Link to="/user">Employee</Link>
         </Menu.Item> : null}
         <Menu.Item
           key="6"

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
-import './Camera.css';
+import './Camera.style.css';
 import CameraPanel from "../../components/CameraPanel/CameraPanel";
+import CameraForm from "../../components/CameraForm/CameraForm";
 import { serverApiWithToken } from "../../common/serverApi";
 import { useDispatch } from "react-redux";
 import allActions from "../../actions";
+import { Button } from 'antd';
 
 const CameraPage = () => {
 
   const [cameras, setCameras] = useState([]);
-  const dispatch = useDispatch();
+  const [add, setAdd] = useState(false);
 
   const getData = async () => {
     let respond = await serverApiWithToken({ url: '/camera/product' })
@@ -28,6 +30,14 @@ const CameraPage = () => {
       <h1>Camera management</h1>
       <div className="camera">
         {cameras.map(c => <CameraPanel data={c} key={c.id} getData={getData} />)}
+        {add ? < CameraForm
+          cancel={() => {
+            setAdd(false);
+          }}
+          getData={getData}
+        /> : <Button type="text">
+          <span className="func-line" onClick={() => setAdd(true)} >Add camera</span>
+        </Button>}
       </div>
     </div>
   );
