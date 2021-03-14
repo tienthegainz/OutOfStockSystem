@@ -59,9 +59,22 @@ class Camera(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     active = db.Column(db.Boolean, default=False)
+    password = db.Column(db.String, nullable=False)
     images = db.relationship('LogImage', backref='cameras', lazy=True)
     texts = db.relationship('LogText', backref='cameras', lazy=True)
     products = db.relationship('CameraProduct', backref='cameras', lazy=True)
+
+    @staticmethod
+    def generate_hash(password):
+
+        return sha256.hash(password)
+
+    """
+    Verify hash and password
+    """
+
+    def verify_hash(self, password):
+        return sha256.verify(password, self.password)
 
     def __repr__(self):
         return "<Camera(id = '%d', name='%s, active='%r')>" % (self.id, self.name, self.active)

@@ -14,7 +14,7 @@ app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(
     DATABASE['path']) if DATABASE['type'] == 'sqlite3' else ''
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config["JWT_SECRET_KEY"] = "thesis-20202"
+app.config["JWT_SECRET_KEY"] = "809f597a682d5d8c578f400da1d5dcba26ca366d855df2b4"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=60)
 
 

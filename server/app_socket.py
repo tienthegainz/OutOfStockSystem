@@ -1,5 +1,6 @@
 from app import socketio
 from flask_socketio import join_room, leave_room
+from common import camera_protected_socket
 from tracker_engine.tracker import TrackerMulti
 from PIL import Image
 from worker import handle_out_of_roi, fire_alert
@@ -37,6 +38,7 @@ def track_image(data, info, room):
 
 
 @socketio.on('camera')
+# @camera_protected_socket
 def on_send_image(data):
     global count
     room = int(data['id'])

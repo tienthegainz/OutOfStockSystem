@@ -2,7 +2,7 @@ from app import app, socketio, db, jwt
 from flask import jsonify, request
 from PIL import Image
 from datetime import datetime, timezone
-from common import random_name_generator
+from common import camera_protected_api, random_name_generator
 from detect_engine.detector import Detector
 from search_engine.searcher import Searcher
 from search_engine.extractor import Extractor
@@ -20,10 +20,10 @@ import re
 
 # Global param
 # detector = Detector()
-# extractor = Extractor()
-# searcher = Searcher()
-extractor = None
-searcher = None
+extractor = Extractor()
+searcher = Searcher()
+# extractor = None
+# searcher = None
 detector = None
 tracker = TrackerMulti()
 
@@ -148,6 +148,49 @@ def admin():
     return jsonify({'success': True}), 200
 
 
+@app.route("/user", methods=["GET"])
+@admin_required()
+def get_user():
+    try:
+        results = User.query.all()
+        return jsonify({'success': True, 'users': [r.to_dict() for r in results]})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
+
+
+@app.route("/user/<id>", methods=["PUT"])
+@admin_required()
+def change_user(id):
+    try:
+        request_data = request.get_json()
+        user = User.query.filter(User.id == id).first()
+        if user:
+            if 'password' in request_data:
+                user.password = User.generate_hash(request_data['password'])
+            if 'admin' in request_data:
+                user.admin = request_data['admin']
+            user.save_to_db()
+            return jsonify({'success': True, 'user': user.to_dict()}), 200
+        else:
+            return jsonify({'success': False, 'msg': 'User not found'}), 400
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
+
+
+@app.route("/user/<id>", methods=["DELETE"])
+@admin_required()
+def delete_user(id):
+    try:
+        user = User.query.filter(User.id == id).first()
+        if user:
+            user.delete_in_db()
+            return jsonify({'success': True, 'user': user.to_dict()}), 200
+        else:
+            return jsonify({'success': False, 'msg': 'User not found'}), 400
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
+
+
 ######################## Products API ########################
 
 # Utilities
@@ -240,224 +283,322 @@ def check_missing(products, camera_id):
 # API
 
 
+@app.route('/product/detect/dummy', methods=['POST'])
+@camera_protected_api
+def watch_product_dummy():
+    return jsonify({'success': True})
+
+
 @app.route('/product/detect', methods=['POST'])
+@camera_protected_api
 def watch_product():
-    request_data = request.get_json()
-    image_data = base64.b64decode(request_data['image'])
-    image = Image.open(io.BytesIO(image_data))
-    room = int(request_data['id'])
-    # signal FE to wait
-    socketio.emit('ready', {'ready': False}, room=room, broadcast=True)
-    # clear tracker
-    tracker.clear_all_objects()
-    # processing
-    result_image, info, count = detect_search_object(image)
-    missing = check_missing(count, room)
-    if missing:
-        handle_missing_object.delay(
-            {'image': request_data['image'], 'missing': missing}, room)
-    # logging
-    logs = ['{}: {}'.format(c['name'], c['quantity']) for c in count]
-    t = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-    if logs:
-        message = '[{}] Detected product: {}'.format(t, ', '.join(logs))
-    else:
-        message = '[{}] No object detected'.format(t)
-    socketio.emit('log',
-                  {'log': message},
-                  room=room,
-                  broadcast=True)
-    socketio.emit('image', {'image': result_image}, room=room, broadcast=True)
-    # Add log to db
-    log = LogText(message=message, time=t, camera_id=room)
-    log.save_to_db()
-    return jsonify({'success': True, 'info': info})
+    try:
+        request_data = request.get_json()
+        image_data = base64.b64decode(request_data['image'])
+        image = Image.open(io.BytesIO(image_data))
+        room = int(request_data['id'])
+        # signal FE to wait
+        socketio.emit('ready', {'ready': False}, room=room, broadcast=True)
+        # clear tracker
+        tracker.clear_all_objects()
+        # processing
+        result_image, info, count = detect_search_object(image)
+        missing = check_missing(count, room)
+        if missing:
+            handle_missing_object.delay(
+                {'image': request_data['image'], 'missing': missing}, room)
+        # logging
+        logs = ['{}: {}'.format(c['name'], c['quantity']) for c in count]
+        t = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+        if logs:
+            message = '[{}] Detected product: {}'.format(t, ', '.join(logs))
+        else:
+            message = '[{}] No object detected'.format(t)
+        socketio.emit('log',
+                      {'log': message},
+                      room=room,
+                      broadcast=True)
+        socketio.emit('image', {'image': result_image},
+                      room=room, broadcast=True)
+        # Add log to db
+        log = LogText(message=message, time=t, camera_id=room)
+        log.save_to_db()
+        return jsonify({'success': True, 'info': info})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/product', methods=['GET'])
 @jwt_required()
 def get_product():
-    results = Product.query.all()
-    return jsonify({'success': True, 'products': [r.to_dict_bulk() for r in results]})
+    try:
+        results = Product.query.all()
+        return jsonify({'success': True, 'products': [r.to_dict_bulk() for r in results]})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
+
+
+@app.route('/product/<id>', methods=['PUT'])
+@jwt_required()
+def change_product(id):
+    try:
+        request_data = request.get_json()
+        product = Product.query.filter(Product.id == id).first()
+        if not product:
+            return jsonify({'success': False, 'msg': 'Product not found'}), 400
+        if 'name' in request_data:
+            product.name = request_data['name']
+        if 'price' in request_data:
+            product.price = request_data['price']
+        product.save_to_db()
+        return jsonify({'success': True, 'product': product.to_dict()}), 200
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/product/<id>', methods=['DELETE'])
 @jwt_required()
 def delete_product(id):
-    product = Product.query.filter(Product.id == id).first()
-    indexes = [image.id for image in product.images]
-    searcher.delete_products(indexes)
-    product.delete_in_db()
-    return jsonify({'success': True})
+    try:
+        product = Product.query.filter(Product.id == id).first()
+        indexes = [image.id for image in product.images]
+        searcher.delete_products(indexes)
+        product.delete_in_db()
+        return jsonify({'success': True})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/product', methods=['POST'])
 @jwt_required()
 def add_product():
-    # TODO
-    request_data = request.get_json()
-    pil_images = []
-    base64_images = []
-    product = Product(name=request_data['name'], price=request_data['price'])
-    product.save_to_db()
-    # print('Product id: ', product.id)
+    try:
+        request_data = request.get_json()
+        pil_images = []
+        base64_images = []
+        product = Product(
+            name=request_data['name'], price=request_data['price'])
+        product.save_to_db()
 
-    for image_str in request_data['images']:
-        imageb64 = re.sub('^data:image/.+;base64,', '', image_str)
-        image_data = base64.b64decode(imageb64)
-        image = Image.open(io.BytesIO(image_data)).convert('RGB')
-        pil_images.append(image)
-        base64_images.append(imageb64)
-        # image.show()
+        for image_str in request_data['images']:
+            imageb64 = re.sub('^data:image/.+;base64,', '', image_str)
+            image_data = base64.b64decode(imageb64)
+            image = Image.open(io.BytesIO(image_data)).convert('RGB')
+            pil_images.append(image)
+            base64_images.append(imageb64)
 
-    features = extractor.extract_many(pil_images)
-    product_qty = features.shape[0]
-    # Get max_id to make index
-    max_product_image_id = db.session.query(func.max(ProductImage.id)).scalar()
-    if max_product_image_id is None:
-        max_product_image_id = 0
-    # print('Max image ID: ', max_product_image_id)
-    product_index = np.arange(max_product_image_id+1,
-                              max_product_image_id+1+product_qty)
-    # print('Idx: ', product_index)
-    # ##########################
+        features = extractor.extract_many(pil_images)
+        product_qty = features.shape[0]
+        # Get max_id to make index
+        max_product_image_id = db.session.query(
+            func.max(ProductImage.id)).scalar()
+        if max_product_image_id is None:
+            max_product_image_id = 0
+        product_index = np.arange(max_product_image_id+1,
+                                  max_product_image_id+1+product_qty)
 
-    save_image_product.delay(base64_images, product.id)
-    searcher.add_products(features, product_index)
-    searcher.save_graph()
+        save_image_product.delay(base64_images, product.id)
+        searcher.add_products(features, product_index)
+        searcher.save_graph()
 
-    return jsonify({'success': True})
+        return jsonify({'success': True, 'product': product.to_dict()})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
+
 
 ######################## Camera API ########################
 
 
 @app.route('/camera/active', methods=['POST'])
 def add_active_camera():
-    camera_id = request.get_json()['id']
-    camera = Camera.query.filter(Camera.id == camera_id).first()
-    if camera is not None:
-        camera.active = True
-        camera.save_to_db()
+    try:
+        camera_id = request.get_json()['id']
+        camera = Camera.query.filter(Camera.id == camera_id).first()
+        if camera is not None:
+            camera.active = True
+            camera.save_to_db()
 
-        cameras = Camera.query.all()
-        socketio.emit('camera_list', {'cameras': [
-                      cam.to_dict() for cam in cameras if cam.active]}, broadcast=True)
-    return jsonify({'success': True})
+            cameras = Camera.query.all()
+            socketio.emit('camera_list', {'cameras': [
+                cam.to_dict() for cam in cameras if cam.active]}, broadcast=True)
+        return jsonify({'success': True})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/camera/active', methods=['GET'])
 @jwt_required()
 def get_active_camera():
-    cameras = Camera.query.all()
-    return jsonify({'success': True, 'cameras': [cam.to_dict() for cam in cameras if cam.active]})
+    try:
+        cameras = Camera.query.all()
+        return jsonify({'success': True, 'cameras': [cam.to_dict() for cam in cameras if cam.active]})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/camera/active/<id>', methods=['DELETE'])
 def delete_active_camera(id):
-    camera_id = int(id)
-    camera = Camera.query.filter(Camera.id == camera_id).first()
-    if camera is not None:
-        camera.active = False
-        camera.save_to_db()
-        cameras = Camera.query.all()
+    try:
+        camera_id = int(id)
+        camera = Camera.query.filter(Camera.id == camera_id).first()
+        if camera is not None:
+            camera.active = False
+            camera.save_to_db()
+            cameras = Camera.query.all()
 
-        socketio.emit('camera_list', {'cameras': [
-                      cam.to_dict() for cam in cameras if cam.active]}, broadcast=True)
+            socketio.emit('camera_list', {'cameras': [
+                cam.to_dict() for cam in cameras if cam.active]}, broadcast=True)
 
-    return jsonify({'success': True, 'deleted_cameras': camera.to_dict()})
+        return jsonify({'success': True, 'deleted_cameras': camera.to_dict()})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/camera', methods=['GET'])
 @jwt_required()
 def get_camera():
-    results = Camera.query.all()
-    # print(results)
-    return jsonify({'success': True, 'cameras': [result.to_dict() for result in results]})
+    try:
+        results = Camera.query.all()
+        return jsonify({'success': True, 'cameras': [result.to_dict() for result in results]})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
+
+
+@app.route('/camera', methods=['POST'])
+@jwt_required()
+def add_camera():
+    try:
+        request_data = request.get_json()
+        camera = Camera()
+        camera.name = request_data['name']
+        camera.password = Camera.generate_hash(request_data['password'])
+        camera.save_to_db()
+        return jsonify({'success': True, 'camera': camera.to_dict()}), 200
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
+
+
+@app.route('/camera/<id>', methods=['PUT'])
+@jwt_required()
+def change_camera(id):
+    try:
+        request_data = request.get_json()
+        camera = Camera.query.filter(Camera.id == id).first()
+        if not camera:
+            return jsonify({'success': False, 'msg': 'Camera not found'}), 400
+        if 'name' in request_data:
+            camera.name = request_data['name']
+        if 'password' in request_data:
+            camera.password = Camera.generate_hash(request_data['password'])
+        camera.save_to_db()
+        return jsonify({'success': True, 'camera': camera.to_dict()}), 200
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
+
+
+@app.route('/camera/<id>', methods=['DELETE'])
+@jwt_required()
+def delete_camera(id):
+    try:
+        camera = Camera.query.filter(Camera.id == id).first()
+        if not camera:
+            return jsonify({'success': False, 'msg': 'Camera not found'}), 400
+        camera.delete_in_db()
+        return jsonify({'success': True, 'camera': camera.to_dict()}), 200
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/camera/product', methods=['GET'])
 @jwt_required()
 def get_camera_product():
-    results = db.session.query(Camera, CameraProduct, Product)\
-        .join(Camera, Camera.id == CameraProduct.camera_id)\
-        .join(Product, Product.id == CameraProduct.product_id)\
-        .all()
-    if results:
-        data = []
-        for camera, info, product in results:
-            new = True
-            product_info = product.to_dict()
-            product_info['quantity'] = info.quantity
-            for i in range(len(data)):
-                if camera.id == data[i]['id']:
-                    data[i]['products'].append(product_info)
-                    new = False
-                    break
-            if new:
-                a = camera.to_dict()
-                a['products'] = [product_info]
-                data.append(a)
-
-        return jsonify({'success': True, 'cameras': data})
-    else:
+    try:
         cameras = Camera.query.all()
+        camera_products = CameraProduct.query.join(
+            Product, CameraProduct.product_id == Product.id)\
+            .add_columns(Product.name, Product.price)\
+            .all()
         data = []
         for camera in cameras:
-            c = camera.to_dict()
-            c['products'] = []
-            data.append(c)
+            info = [{
+                'id': c[0].product_id,
+                'name': c[1],
+                'price': c[2],
+                'quantity': c[0].quantity
+            } for c in camera_products if c[0].camera_id == camera.id]
+            cam = camera.to_dict()
+            cam['products'] = info
+            data.append(cam)
         return jsonify({'success': True, 'cameras': data})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/camera/product', methods=['POST'])
 @jwt_required()
 def add_camera_product():
-    request_data = request.get_json()
-    camera_product = CameraProduct.query.filter(CameraProduct.camera_id == request_data['camera_id'])\
-        .filter(CameraProduct.product_id == request_data['product_id']).first()
-    if camera_product is not None:
-        camera_product.quantity += request_data['quantity']
-        camera_product.save_to_db()
-    else:
-        camera_product = CameraProduct(camera_id=request_data['camera_id'],
-                                       product_id=request_data['product_id'],
-                                       quantity=request_data['quantity'])
-        try:
+    try:
+        request_data = request.get_json()
+        camera_product = CameraProduct.query.filter(CameraProduct.camera_id == request_data['camera_id'])\
+            .filter(CameraProduct.product_id == request_data['product_id']).first()
+        if camera_product is not None:
+            camera_product.quantity += request_data['quantity']
             camera_product.save_to_db()
-        except Exception as err:
-            return jsonify({'success': False, 'error': err})
+        else:
+            camera = Camera.query.filter(
+                Camera.id == request_data['camera_id']).first()
+            if camera is None:
+                return jsonify({'success': False, 'msg': 'Camera not found'}), 400
 
-    return jsonify({'success': True, 'added': camera_product.to_dict()})
+            product = Product.query.filter(
+                Product.id == request_data['product_id']).first()
+            if product is None:
+                return jsonify({'success': False, 'msg': 'Product not found'}), 400
+
+            camera_product = CameraProduct(camera_id=request_data['camera_id'],
+                                           product_id=request_data['product_id'],
+                                           quantity=request_data['quantity'])
+            camera_product.save_to_db()
+
+        return jsonify({'success': True, 'added': camera_product.to_dict()})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/camera/<camera_id>/product/<product_id>', methods=['PUT'])
 @jwt_required()
 def change_product_quantity(camera_id, product_id):
-    request_data = request.get_json()
-    quantity = request_data['quantity'] if 'quantity' in request_data else None
-    if quantity is None:
-        return jsonify({'success': False, 'error': 'Product quantity not found'}), 400
+    try:
+        request_data = request.get_json()
+        quantity = request_data['quantity'] if 'quantity' in request_data else None
+        if quantity is None:
+            return jsonify({'success': False, 'error': 'Product quantity not found'}), 400
 
-    result = CameraProduct.query.filter(CameraProduct.camera_id == camera_id)\
-        .filter(CameraProduct.product_id == product_id).first()
-    if result is None:
-        return jsonify({'success': False, 'error': 'Product not found'}), 400
-    else:
-        result.quantity = quantity
-        result.save_to_db()
-        return jsonify({'success': True, 'product': result.to_dict()})
+        result = CameraProduct.query.filter(CameraProduct.camera_id == camera_id)\
+            .filter(CameraProduct.product_id == product_id).first()
+        if result is None:
+            return jsonify({'success': False, 'error': 'Product not found'}), 400
+        else:
+            result.quantity = quantity
+            result.save_to_db()
+            return jsonify({'success': True, 'product': result.to_dict()})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/camera/<camera_id>/product/<product_id>', methods=['DELETE'])
 @jwt_required()
 def delete_camera_product(camera_id, product_id):
-    result = CameraProduct.query.filter(CameraProduct.camera_id == camera_id)\
-        .filter(CameraProduct.product_id == product_id).first()
-    if result is None:
-        return jsonify({'success': False, 'error': 'Product not found'}), 400
-    else:
-        result.delete_in_db()
-        return jsonify({'success': True, 'deleted': result.to_dict()})
+    try:
+        result = CameraProduct.query.filter(CameraProduct.camera_id == camera_id)\
+            .filter(CameraProduct.product_id == product_id).first()
+        if result is None:
+            return jsonify({'success': False, 'error': 'Product not found'}), 400
+        else:
+            result.delete_in_db()
+            return jsonify({'success': True, 'deleted': result.to_dict()})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 ######################## Logger API ########################
 
@@ -465,99 +606,114 @@ def delete_camera_product(camera_id, product_id):
 @app.route('/log/text', methods=['POST'])
 @jwt_required()
 def get_all_log_text():
-    data = request.get_json()
-    limit = data['limit'] if 'limit' in data else 5
-    offset = (data['page'] - 1) * limit if 'page' in data else 0
-    from_date = data['from'] if 'from' in data else None
-    to_date = data['to'] if 'to' in data else None
+    try:
+        data = request.get_json()
+        limit = data['limit'] if 'limit' in data else 5
+        offset = (data['page'] - 1) * limit if 'page' in data else 0
+        from_date = data['from'] if 'from' in data else None
+        to_date = data['to'] if 'to' in data else None
 
-    if from_date is not None and to_date is not None:
-        query = LogText.query.filter(LogText.time.between(from_date, to_date)).order_by(
-            LogText.id.desc()).limit(limit).offset(offset)
-    else:
-        query = LogText.query.order_by(
-            LogText.id.desc()).limit(limit).offset(offset)
-    results = query.all()
-    texts = [r.to_dict() for r in results]
-    return jsonify({'success': True, 'data': texts})
+        if from_date is not None and to_date is not None:
+            query = LogText.query.filter(LogText.time.between(from_date, to_date)).order_by(
+                LogText.id.desc()).limit(limit).offset(offset)
+        else:
+            query = LogText.query.order_by(
+                LogText.id.desc()).limit(limit).offset(offset)
+        results = query.all()
+        texts = [r.to_dict() for r in results]
+        return jsonify({'success': True, 'data': texts})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/log/text/<id>', methods=['POST'])
 @jwt_required()
 def get_log_text_by_id(id):
-    data = request.get_json()
-    limit = data['limit'] if 'limit' in data else 5
-    from_date = data['from'] if 'from' in data else None
-    to_date = data['to'] if 'to' in data else None
+    try:
+        data = request.get_json()
+        limit = data['limit'] if 'limit' in data else 5
+        from_date = data['from'] if 'from' in data else None
+        to_date = data['to'] if 'to' in data else None
 
-    if from_date is None or to_date is None:
-        if limit is not None:
-            query = LogText.query.filter(LogText.camera_id == id).order_by(
-                LogText.id.desc()).limit(limit)
+        if from_date is None or to_date is None:
+            if limit is not None:
+                query = LogText.query.filter(LogText.camera_id == id).order_by(
+                    LogText.id.desc()).limit(limit)
+            else:
+                return jsonify({'success': False, 'message': 'No log limit on No-Date request'})
         else:
-            return jsonify({'success': False, 'message': 'No log limit on No-Date request'})
-    else:
-        if limit is not None:
-            query = LogText.query.filter(LogText.camera_id == id).filter(
-                LogText.time.between(from_date, to_date)).order_by(LogText.id.desc()).limit(limit)
-        else:
-            query = LogText.query.filter(LogText.camera_id == id).filter(
-                LogText.time.between(from_date, to_date)).order_by(LogText.id.desc())
+            if limit is not None:
+                query = LogText.query.filter(LogText.camera_id == id).filter(
+                    LogText.time.between(from_date, to_date)).order_by(LogText.id.desc()).limit(limit)
+            else:
+                query = LogText.query.filter(LogText.camera_id == id).filter(
+                    LogText.time.between(from_date, to_date)).order_by(LogText.id.desc())
 
-    results = query.all()
-    # print(results)
-    texts = [r.to_dict() for r in results]
-    return jsonify({'success': True, 'data': texts})
+        results = query.all()
+        # print(results)
+        texts = [r.to_dict() for r in results]
+        return jsonify({'success': True, 'data': texts})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/log/image', methods=['POST'])
 @jwt_required()
 def get_all_log_image():
-    data = request.get_json()
-    limit = data['limit'] if 'limit' in data else 5
-    offset = (data['page'] - 1) * limit if 'page' in data else 0
-    from_date = data['from'] if 'from' in data else None
-    to_date = data['to'] if 'to' in data else None
+    try:
+        data = request.get_json()
+        limit = data['limit'] if 'limit' in data else 5
+        offset = (data['page'] - 1) * limit if 'page' in data else 0
+        from_date = data['from'] if 'from' in data else None
+        to_date = data['to'] if 'to' in data else None
 
-    if from_date is not None and to_date is not None:
-        query = LogImage.query.filter(LogImage.time.between(from_date, to_date)).order_by(
-            LogImage.id.desc()).limit(limit).offset(offset)
-    else:
-        query = LogImage.query.order_by(
-            LogImage.id.desc()).limit(limit).offset(offset)
-    results = query.all()
-    images = [r.to_dict() for r in results]
-    return jsonify({'success': True, 'data': images})
+        if from_date is not None and to_date is not None:
+            query = LogImage.query.filter(LogImage.time.between(from_date, to_date)).order_by(
+                LogImage.id.desc()).limit(limit).offset(offset)
+        else:
+            query = LogImage.query.order_by(
+                LogImage.id.desc()).limit(limit).offset(offset)
+        results = query.all()
+        images = [r.to_dict() for r in results]
+        return jsonify({'success': True, 'data': images})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/log/image/count/<id>', methods=['POST'])
 @jwt_required()
 def count_log_image_by_id(id):
-    data = request.get_json()
-    from_date = data['from']
-    to_date = data['to']
-    total = LogImage.query.filter(LogImage.camera_id == id).filter(
-        LogImage.time.between(from_date, to_date)).count()
-    # print(total)
-    return jsonify({'success': True, 'total': total})
+    try:
+        data = request.get_json()
+        from_date = data['from']
+        to_date = data['to']
+        total = LogImage.query.filter(LogImage.camera_id == id).filter(
+            LogImage.time.between(from_date, to_date)).count()
+        # print(total)
+        return jsonify({'success': True, 'total': total})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
 
 
 @app.route('/log/image/<id>', methods=['POST'])
 @jwt_required()
 def get_log_image_by_id(id):
-    data = request.get_json()
-    limit = data['limit'] if 'limit' in data else 5
-    offset = (data['page'] - 1) * limit if 'page' in data else 0
-    from_date = data['from'] if 'from' in data else None
-    to_date = data['to'] if 'to' in data else None
+    try:
+        data = request.get_json()
+        limit = data['limit'] if 'limit' in data else 5
+        offset = (data['page'] - 1) * limit if 'page' in data else 0
+        from_date = data['from'] if 'from' in data else None
+        to_date = data['to'] if 'to' in data else None
 
-    if from_date is None or to_date is None:
-        query = LogImage.query.filter(LogImage.camera_id == id).order_by(
-            LogImage.id.desc()).limit(limit).offset(offset)
-    else:
-        query = LogImage.query.filter(LogImage.camera_id == id).filter(LogImage.time.between(from_date, to_date)).order_by(
-            LogImage.id.desc()).limit(limit).offset(offset)
-    results = query.all()
-    # print(results)
-    images = [r.to_dict() for r in results]
-    return jsonify({'success': True, 'data': images})
+        if from_date is None or to_date is None:
+            query = LogImage.query.filter(LogImage.camera_id == id).order_by(
+                LogImage.id.desc()).limit(limit).offset(offset)
+        else:
+            query = LogImage.query.filter(LogImage.camera_id == id).filter(LogImage.time.between(from_date, to_date)).order_by(
+                LogImage.id.desc()).limit(limit).offset(offset)
+        results = query.all()
+        # print(results)
+        images = [r.to_dict() for r in results]
+        return jsonify({'success': True, 'data': images})
+    except Exception as err:
+        return jsonify({'success': False, 'msg': err}), 500
