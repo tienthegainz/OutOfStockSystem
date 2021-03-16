@@ -38,11 +38,9 @@ def track_image(data, info, room):
 
 
 @socketio.on('camera')
-# @camera_protected_socket
+@camera_protected_socket
 def on_send_image(data):
-    global count
     room = int(data['id'])
-    socketio.emit('ready', {'ready': True}, room=room)
     try:
         if data['fire_check'] == True:
             fire_alert.delay(data['image'], room)
@@ -50,22 +48,27 @@ def on_send_image(data):
         info = data['info'] if 'info' in data else None
 
         result_image = track_image(data['image'], info, room)
-        print('Sending data to room {}'.format(room))
+        # print('Sending data to room {}'.format(room))
         socketio.emit('image', {'image': result_image},
                       room=room, broadcast=True)
     except Exception as err:
         print(err)
 
 
+@socketio.on('dummy')
+def on_join(data):
+    print('Data: ', data)
+
+
 @socketio.on('join')
 def on_join(data):
-    room = data['id']
+    room = int(data['id'])
     join_room(room)
     print('Connected to room: {}'.format(room))
 
 
 @socketio.on('leave')
 def on_leave(data):
-    room = data['room']
+    room = int(data['room'])
     leave_room(room)
     print('Left room: {}'.format(room))

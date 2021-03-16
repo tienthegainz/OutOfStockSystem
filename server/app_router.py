@@ -19,12 +19,12 @@ import numpy as np
 import re
 
 # Global param
-# detector = Detector()
+detector = Detector()
 extractor = Extractor()
 searcher = Searcher()
 # extractor = None
 # searcher = None
-detector = None
+# detector = None
 tracker = TrackerMulti()
 
 
@@ -286,6 +286,7 @@ def check_missing(products, camera_id):
 @app.route('/product/detect/dummy', methods=['POST'])
 @camera_protected_api
 def watch_product_dummy():
+    socketio.emit('log', {'log': 'Dummy'}, broadcast=True)
     return jsonify({'success': True})
 
 
@@ -410,6 +411,7 @@ def add_product():
 
 
 @app.route('/camera/active', methods=['POST'])
+@camera_protected_api
 def add_active_camera():
     try:
         camera_id = request.get_json()['id']
@@ -437,6 +439,7 @@ def get_active_camera():
 
 
 @app.route('/camera/active/<id>', methods=['DELETE'])
+@camera_protected_api
 def delete_active_camera(id):
     try:
         camera_id = int(id)

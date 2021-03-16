@@ -23,7 +23,7 @@ def camera_protected_api(f):
     @wraps(f)
     def wrap(*args, **kwargs):
         request_data = request.get_json()
-        if not request_data or 'pass' not in request_data or request_data['pass'] != '123':
+        if not request_data or 'password' not in request_data or request_data['password'] != '123':
             return jsonify({'success': False, 'msg': 'Access to embbed camera api BLOCKED'}), 400
         return f(*args, **kwargs)
 
@@ -34,7 +34,7 @@ def camera_protected_api(f):
 def camera_protected_socket(f):
     @wraps(f)
     def wrap(data):
-        if 'pass' not in data or data['pass'] != '123':
+        if 'password' not in data or data['password'] != '123':
             return jsonify({'success': False, 'msg': 'Access to embbed camera api BLOCKED'}), 400
         return f(data)
 
