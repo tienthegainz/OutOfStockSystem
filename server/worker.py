@@ -21,6 +21,7 @@ celery = Celery(
 
 fire_alarm = FireAlarm() if not (
     os.environ.get('SERVER_STATE') == 'running') else None
+# fire_alarm = FireAlarm()
 firebase_app = pyrebase.initialize_app(FIREBASE_CONFIG)
 firebase_storage = firebase_app.storage()
 
@@ -29,19 +30,30 @@ firebase_storage = firebase_app.storage()
 def fire_alert(data, room):
     socketio = SocketIO(app, cors_allowed_origins="*",
                         message_queue='redis://')
-    print('Detecting fire...')
+    image_data = base64.b64decode(data)
+    image = Image.open(io.BytesIO(image_data)).convert('RGB')
+    result = fire_alarm.check_fire(image)
+    print('Detecting fire.... Result: {}'.format(result))
     with app.app_context():
-        image_data = base64.b64decode(data)
-        image = Image.open(io.BytesIO(image_data))
-        result = fire_alarm.check_fire(image)
-        socketio.emit('fire', {'fire': result}, room=room)
         if result:
+            socketio.emit('fire', {'fire': result}, room=room)
             t = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
             message = '[{}] WARNING There may be fire. Please check'.format(t)
             socketio.emit(
                 'log', {'log': message})
             log = LogText(message=message, time=t, camera_id=room)
             log.save_to_db()
+            # Save image
+            send_image = io.BytesIO(
+                base64.b64decode(re.sub("data:image/jpeg;base64", '', data)))
+            image_name = random_name_generator() + '.jpg'
+            firebase_storage.child(
+                "images/{}".format(image_name)).put(send_image)
+            url = firebase_storage.child(
+                "images/{}".format(image_name)).get_url(None)
+            image = LogImage(url=url, time=t, camera_id=room)
+            db.session.add(image)
+            db.session.commit()
 
 
 @celery.task(ignore_result=True)

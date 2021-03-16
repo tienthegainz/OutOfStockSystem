@@ -31,9 +31,8 @@ class FireAlarm(metaclass=Singleton):
                 [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
         # give RAM space
-        image = self.preprocess_image(Image.open(
+        image = self.check_fire(Image.open(
             '/home/tienhv/GR/OutOfStockSystem/server/storage/image/1/1.jpeg'))
-        self.fire_model(image)
         print("Booting fire detection: Done")
 
     def check_fire(self, image):
@@ -41,11 +40,18 @@ class FireAlarm(metaclass=Singleton):
         try:
             image = self.preprocess_image(image)
             output = self.fire_model(image)
-            print('Output: ', output)
+            print('Fire model output: ', output)
             _, predicted = torch.max(output.data, 1)
             predicted = predicted.item()
-            print('Fire check time: {} -Result: {}'.format(time.time()-t, predicted))
-            return False if predicted == 1 else True
+            if predicted != 1:
+                return True
+            else:
+                output_normal = [val.item() for val in torch.squeeze(output)]
+                variance = output_normal[1] - output_normal[0]
+                percentage = abs(variance/output_normal[1])
+                if percentage < 0.25:
+                    return True
+            return False
         except Exception as e:
             print(e)
             return None
@@ -57,7 +63,8 @@ class FireAlarm(metaclass=Singleton):
         return image
 
 
-# if __name__ == "__main__":
-#     f = FireAlarm()
-#     image = Image.open('/home/tienhv/GR/OutOfStockSystem/image/20.jpg')
-#     print(f.check_fire(image))
+if __name__ == "__main__":
+    f = FireAlarm()
+    # image = Image.open(
+    #     '/home/tienhv/GR/OutOfStockSystem/product_sample/gucci_perfume/1.jpeg')
+    # print(f.check_fire(image))

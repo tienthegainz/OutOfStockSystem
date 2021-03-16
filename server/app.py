@@ -6,49 +6,49 @@ from config import DATABASE
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
 import os
-import logging
-import logging.config
+# import logging
+# import logging.config
 
-logging.config.dictConfig({
-    'version': 1,
-    'formatters': {
-        'default': {
-            'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
-        }
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'level': 'INFO',
-            'formatter': 'default',
-            'stream': 'ext://sys.stdout',
-        },
-        'file': {
-            'class': 'logging.FileHandler',
-            'level': 'INFO',
-            'formatter': 'default',
-            'filename': 'app.log',
-        }
-    },
-    'loggers': {
-        'console': {
-            'level': 'INFO',
-            'handlers': ['console'],
-            'propagate': 'no',
-        },
-        'file': {
-            'level': 'INFO',
-            'handlers': ['file'],
-            'propagate': 'no',
-        }
-    },
-    'root': {
-        'level': 'INFO',
-        # 'handlers': ['console', 'file']
-        'handlers': ['console']
-    },
+# logging.config.dictConfig({
+#     'version': 1,
+#     'formatters': {
+#         'default': {
+#             'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+#         }
+#     },
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#             'level': 'INFO',
+#             'formatter': 'default',
+#             'stream': 'ext://sys.stdout',
+#         },
+#         'file': {
+#             'class': 'logging.FileHandler',
+#             'level': 'INFO',
+#             'formatter': 'default',
+#             'filename': 'app.log',
+#         }
+#     },
+#     'loggers': {
+#         'console': {
+#             'level': 'INFO',
+#             'handlers': ['console'],
+#             'propagate': 'no',
+#         },
+#         'file': {
+#             'level': 'INFO',
+#             'handlers': ['file'],
+#             'propagate': 'no',
+#         }
+#     },
+#     'root': {
+#         'level': 'INFO',
+#         # 'handlers': ['console', 'file']
+#         'handlers': ['console']
+#     },
 
-})
+# })
 
 
 app = Flask(__name__)

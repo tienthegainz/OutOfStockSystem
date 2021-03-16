@@ -42,7 +42,6 @@ const ProductWatcherPage = () => {
       socket.emit('join', { id: camera.id });
       socket.on('log', data => {
         let new_logs = [...logs];
-        console.log(new_logs);
         new_logs.push({ 'id': logCounter, 'log': data.log });
         let a = logCounter + 1;
         setLogCounter(a);
@@ -75,6 +74,7 @@ const ProductWatcherPage = () => {
       const camera_id = camera.id
       socket.emit('join', { id: camera_id });
       socket.on('fire', data => {
+        console.log('Fire: ', data.fire);
         setFire(data.fire);
       });
 
