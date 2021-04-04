@@ -12,7 +12,7 @@ p {
 }
 
 .tree-img {
-  width: 250px;
+  width: 150px;
   height: 250px;
   margin-right: 20px;
   margin-left: 10px;
@@ -24,7 +24,7 @@ p {
 }
 
 .img-space {
-  min-width: 280px;
+  min-width: 180px;
   min-height: 250px;
 }
 
@@ -42,4 +42,13 @@ p {
 .product-spec span {
   font-style: italic;
   color: slategray;
+}
+
+.product-edit-button {
+  color: #ffffff;
+  text-align: center;
+  font-size: 20px;
+  width: fit-content;
+  height: fit-content;
+  margin: auto;
 }

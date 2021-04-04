@@ -1,9 +1,7 @@
 import random
 import string
-
-
-def random_name_generator(size=6, chars=string.ascii_lowercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
+from functools import wraps
+from flask import jsonify, request
 
 
 class Singleton(type):
@@ -14,3 +12,30 @@ class Singleton(type):
             cls._instances[cls] = super(
                 Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
+
+
+def random_name_generator(size=6, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+
+# Flask decorator for camera to send request to server
+def camera_protected_api(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        request_data = request.get_json()
+        if not request_data or 'password' not in request_data or request_data['password'] != '123':
+            return jsonify({'success': False, 'msg': 'Access to embbed camera api BLOCKED'}), 400
+        return f(*args, **kwargs)
+
+    return wrap
+
+
+# Flask decorator for camera to send socket to server
+def camera_protected_socket(f):
+    @wraps(f)
+    def wrap(data):
+        if 'password' not in data or data['password'] != '123':
+            return jsonify({'success': False, 'msg': 'Access to embbed camera api BLOCKED'}), 400
+        return f(data)
+
+    return wrap

@@ -1,3 +1,4 @@
+import os
 import sys
 # sys.path.append('/home/tienhv/GR/OutOfStockSystem/server')  # nopep8
 import torch
@@ -9,7 +10,7 @@ import time
 from common import Singleton
 from detect_engine.retinanet import model
 from detect_engine.datasets.dataloader import Normalizer, Resizer, UnNormalizer, DATASET_CLASSES
-from config import DETECTOR
+from config import DETECTOR, SAMPLE_IMAGE
 
 
 class Detector(metaclass=Singleton):
@@ -26,8 +27,7 @@ class Detector(metaclass=Singleton):
         self.tfms = self.init_transform()
         self.unnormalize = UnNormalizer()
         # give RAM space
-        img = Image.open(
-            '/home/tienhv/GR/OutOfStockSystem/server/storage/image/1/1.jpeg')
+        img = Image.open(SAMPLE_IMAGE)
         self.predict(img)
         print("Booting detection: Done")
 

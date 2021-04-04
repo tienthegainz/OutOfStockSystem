@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import socketIOClient from "socket.io-client";
+import { io } from "socket.io-client";
 import './ProductWatcher.css';
 import { Menu, Dropdown, Button } from 'antd';
 import { DownOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import CameraReadyModal from "../../components/CameraReadyModal/CameraReadyModal";
-import axios from 'axios'
-import { serverApi } from "../../common/serverApi";
+import { serverApiWithToken } from "../../common/serverApi";
+
 
 const ENDPOINT = "http://0.0.0.0:5001"
 
@@ -18,85 +18,92 @@ const ProductWatcherPage = () => {
   const [fire, setFire] = useState(false);
   const [cameraList, setCameraList] = useState([]);
   const [camera, setCamera] = useState();
-  // const [socket, setSocket] = useState();
 
   useEffect(() => {
     // handle CCTV image
-    const socket = socketIOClient(ENDPOINT);
-    if (camera)
+    if (camera) {
+      const socket = io(ENDPOINT);
       socket.emit('join', { id: camera.id });
-    socket.on('image', data => {
-      let byteArray = data.image;
-      let img = 'data:image/png;base64,' + byteArray
-      setImage(img);
-    });
-
-    // CLEAN UP THE EFFECT
-    if (socket)
-      return () => socket.disconnect();
+      socket.on('image', data => {
+        let byteArray = data.image;
+        let img = 'data:image/png;base64,' + byteArray
+        setImage(img);
+      });
+      // CLEAN UP THE EFFECT
+      if (socket)
+        return () => socket.disconnect();
+    }
   }, [camera]);
 
   useEffect(() => {
     // handle CCTV log
-    const socket = socketIOClient(ENDPOINT);
-    if (camera)
+    if (camera) {
+      const socket = io(ENDPOINT);
       socket.emit('join', { id: camera.id });
-    socket.on('log', data => {
-      let new_logs = [...logs];
-      console.log(new_logs);
-      new_logs.push({ 'id': logCounter, 'log': data.log });
-      let a = logCounter + 1;
-      setLogCounter(a);
-      setLogs(new_logs);
-    });
-
-    // CLEAN UP THE EFFECT
-    if (socket)
-      return () => socket.disconnect();
+      socket.on('log', data => {
+        let new_logs = [...logs];
+        new_logs.push({ 'id': logCounter, 'log': data.log });
+        let a = logCounter + 1;
+        setLogCounter(a);
+        setLogs(new_logs);
+      });
+      // CLEAN UP THE EFFECT
+      if (socket)
+        return () => socket.disconnect();
+    }
   }, [logCounter, logs, camera]);
 
   useEffect(() => {
     // handle image is sending effect
-    const socket = socketIOClient(ENDPOINT);
-    if (camera)
+    if (camera) {
+      const socket = io(ENDPOINT);
       socket.emit('join', { id: camera.id });
-    socket.on('ready', data => {
-      setReady(data.ready);
-    });
-
-    // CLEAN UP THE EFFECT
-    if (socket)
-      return () => socket.disconnect();
+      socket.on('ready', data => {
+        setReady(data.ready);
+      });
+      // CLEAN UP THE EFFECT
+      if (socket)
+        return () => socket.disconnect();
+    }
   }, [camera]);
 
   useEffect(() => {
     // handle fire warning
-    const socket = socketIOClient(ENDPOINT);
-    if (camera)
-      socket.emit('join', { id: camera.id });
-    socket.on('fire', data => {
-      console.log(data.fire);
-      setFire(data.fire);
-    });
+    if (camera) {
+      const socket = io(ENDPOINT);
+      const camera_id = camera.id
+      socket.emit('join', { id: camera_id });
+      socket.on('fire', data => {
+        console.log('Fire: ', data.fire);
+        setFire(data.fire);
+      });
 
-    // CLEAN UP THE EFFECT
-    if (socket)
-      return () => socket.disconnect();
+      // CLEAN UP THE EFFECT
+      if (socket)
+        return () => {
+          socket.emit('leave', { id: camera_id });
+          socket.disconnect();
+        }
+    }
   }, [camera]);
 
   useEffect(() => {
     const getAllCamera = async () => {
-      let result = await serverApi({ url: '/camera/active' });
-      if (!result.error) {
-        // console.log(result);
-        setCameraList(result.data.cameras)
+      let respond = await serverApiWithToken({ url: '/camera/active' });
+      if (respond.status === 200 && respond.data.success === true) {
+        setCameraList(respond.data.cameras)
       }
     }
     getAllCamera();
-    const camera_socket = socketIOClient(ENDPOINT);
+    const camera_socket = io(ENDPOINT);
     camera_socket.on('camera_list', data => {
-      console.log(data);
       setCameraList(data.cameras);
+      if (data.cameras.length === 0) {
+        // Reset
+        setCamera(null);
+        setReady(false);
+        setFire(false);
+      }
     });
 
     // CLEAN UP THE EFFECT

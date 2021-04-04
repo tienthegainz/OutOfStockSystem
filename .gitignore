@@ -7,6 +7,8 @@ storage/
 image/
 *.pth
 *.rdb
+*.log
+*.zip
 
 firebase-cred.json
-firebase_config.py
+.env

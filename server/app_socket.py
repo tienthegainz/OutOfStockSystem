@@ -1,8 +1,9 @@
 from app import socketio
 from flask_socketio import join_room, leave_room
+from common import camera_protected_socket
 from tracker_engine.tracker import TrackerMulti
 from PIL import Image
-from worker import save_image_log, fire_alert
+from worker import handle_out_of_roi, fire_alert
 
 import base64
 import io
@@ -18,13 +19,13 @@ def track_image(data, info, room):
     image = Image.open(io.BytesIO(image_data))
     np_image = np.array(image)
     update_ok = False
-    if info != None:
+    if info is not None and info:
         update_ok = tracker.update(np_image, info)
     else:
         update_ok = tracker.update(np_image)
     draw_img = tracker.draw()
     if tracker.check_out_roi() or not update_ok:
-        save_image_log.delay(data, room)
+        handle_out_of_roi.delay(data, room)
 
     result_image = Image.fromarray(draw_img.astype(np.uint8))
     img_byte = io.BytesIO()
@@ -37,10 +38,9 @@ def track_image(data, info, room):
 
 
 @socketio.on('camera')
+@camera_protected_socket
 def on_send_image(data):
-    global count
     room = int(data['id'])
-    socketio.emit('ready', {'ready': True}, room=room)
     try:
         if data['fire_check'] == True:
             fire_alert.delay(data['image'], room)
@@ -48,22 +48,27 @@ def on_send_image(data):
         info = data['info'] if 'info' in data else None
 
         result_image = track_image(data['image'], info, room)
-        print('Sending data to room {}'.format(room))
+        # print('Sending data to room {}'.format(room))
         socketio.emit('image', {'image': result_image},
                       room=room, broadcast=True)
     except Exception as err:
         print(err)
 
 
+@socketio.on('dummy')
+def on_join(data):
+    print('Data: ', data)
+
+
 @socketio.on('join')
 def on_join(data):
-    room = data['id']
+    room = int(data['id'])
     join_room(room)
     print('Connected to room: {}'.format(room))
 
 
 @socketio.on('leave')
 def on_leave(data):
-    room = data['room']
+    room = int(data['room'])
     leave_room(room)
     print('Left room: {}'.format(room))

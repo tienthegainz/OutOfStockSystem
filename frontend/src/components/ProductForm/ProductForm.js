@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Form, Input, InputNumber, Button, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import './ProductForm.css'
-import { serverApi } from "../../common/serverApi";
+import { serverApiWithToken } from "../../common/serverApi";
+
 
 const normFile = (e) => {
   // console.log('Upload: ', e)
@@ -27,11 +28,11 @@ const getBase64 = (file) => {
 
 const ProductForm = (props) => {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
   const onFinish = (values) => {
     const upload = async (values) => {
-      // setLoading(true);
+      setLoading(true);
       let images = values.images;
       for (const key in images) {
         let f = images[key].originFileObj;
@@ -39,8 +40,10 @@ const ProductForm = (props) => {
       }
       values.images = images;
       console.log('Upload: ', values);
-      const respond = await serverApi({ url: '/product', data: values, method: 'post' });
+      const respond = await serverApiWithToken({ url: '/product', data: values, method: 'post' });
       console.log(respond);
+      props.getData();
+      props.cancel();
     }
     upload(values);
   };

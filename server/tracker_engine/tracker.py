@@ -47,7 +47,7 @@ class TrackerMulti(metaclass=Singleton):
                 self.objs = [{**state, 'is_out': False} for state in states]
         else:
             self.count += 1
-            if self.count >= self.config['no_bbox_thres']:
+            if self.count >= self.config['no_bbox_thres'] and self.objs:
                 # clear all object
                 self.objs = []
                 self.count = 0

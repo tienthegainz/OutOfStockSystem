@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
 import './ImageLog.css';
 import ImageCard from '../ImageCard/ImageCard';
-import { serverApi } from "../../common/serverApi";
+import { serverApiWithToken } from "../../common/serverApi";
 import { Button } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { useDispatch } from "react-redux";
+import allActions from "../../actions";
 
 const ImageLog = (props) => {
   const limit = 8;
   const [images, setImages] = useState([[]]);
   const [page, setPage] = useState(1);
   const [totalPage, setTotalPage] = useState(1);
+  const dispatch = useDispatch();
 
   const renderImage = (data) => {
     let arr = [];
@@ -30,9 +33,9 @@ const ImageLog = (props) => {
         "from": date + " 00:00:00",
         "to": date + " 23:59:99"
       };
-      let respond = await serverApi({ url: '/log/image/' + id, data: data, method: 'post' })
+      let respond = await serverApiWithToken({ url: '/log/image/' + id, data: data, method: 'post' })
       console.log(respond);
-      if (respond.status === 200) {
+      if (respond.status === 200 && respond.data.success === true) {
         setImages(renderImage(respond.data.data));
       }
     };
@@ -46,7 +49,7 @@ const ImageLog = (props) => {
         "from": date + " 00:00:00",
         "to": date + " 23:59:99"
       };
-      let respond = await serverApi({ url: '/log/image/count/' + id, data: data, method: 'post' })
+      let respond = await serverApiWithToken({ url: '/log/image/count/' + id, data: data, method: 'post' })
       console.log(respond);
       if (respond.status === 200) {
         let total = Math.ceil(respond.data.total / limit)

@@ -10,28 +10,58 @@ import NavBar from "./components/NavBar/NavBar";
 import "./App.css";
 import LogPage from "./pages/log/Log";
 import ProductPage from "./pages/product/Product";
+import LoginPage from "./pages/login/Login";
+import { useDispatch, useSelector } from 'react-redux';
+import UserPage from "./pages/employee/Employee";
+import { notification } from 'antd';
+import allActions from "./actions";
 
 const App = () => {
+  const userInfo = useSelector(state => state.currentUser);
+  const notiInfo = useSelector(state => state.notification);
+  const dispatch = useDispatch();
 
-  return (
-    <Router>
+  const openNotification = (title, message) => {
+    notification.error({
+      message: title,
+      description: message,
+      duration: 3,
+      placement: 'bottomRight'
+    });
+  };
+
+  useEffect(() => {
+    if (notiInfo.trigger) {
+      openNotification(notiInfo.title, notiInfo.message);
+      dispatch(allActions.notiActions.cancel());
+    }
+  }, [notiInfo]);
+
+  return (<React.Fragment>
+    {userInfo.isLoggedIn ? <Router>
       <NavBar />
       <Switch>
-        <Route path="/log">
+        <Route exact path="/log">
           <LogPage />
         </Route>
-        <Route path="/camera">
+        <Route exact path="/camera">
           <CameraPage />
         </Route>
-        <Route path="/product">
+        <Route exact path="/product">
           <ProductPage />
         </Route>
-        <Route path="/">
+        <Route exact path="/product">
+          <ProductPage />
+        </Route>
+        <Route exact path="/user">
+          <UserPage />
+        </Route>
+        <Route exact path={["/", "/watcher"]} >
           <ProductWatcherPage />
         </Route>
       </Switch>
-
-    </Router>
+    </Router> : <LoginPage />}
+  </React.Fragment >
   );
 }
 

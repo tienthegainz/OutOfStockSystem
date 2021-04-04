@@ -4,7 +4,9 @@ import { Tabs, DatePicker, Menu, Dropdown, Button } from 'antd';
 import { DownOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import ImageLog from "../../components/image_log/ImageLog";
 import LogBox from "../../components/LogBox/LogBox";
-import { serverApi } from "../../common/serverApi";
+import { serverApiWithToken } from "../../common/serverApi";
+import { useDispatch } from "react-redux";
+import allActions from "../../actions";
 
 const { TabPane } = Tabs;
 
@@ -15,12 +17,13 @@ const LogPage = () => {
   const [camera, setCamera] = useState();
   // 0: not clicked, 1: ok, -1: error
   const [check, setCheck] = useState(0);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const getData = async () => {
-      let respond = await serverApi({ url: '/camera' })
+      let respond = await serverApiWithToken({ url: '/camera' })
       console.log(respond);
-      if (respond.status === 200) {
+      if (respond.status === 200 && respond.data.success === true) {
         let data = respond.data.cameras;
         setAllCamera(data);
       }

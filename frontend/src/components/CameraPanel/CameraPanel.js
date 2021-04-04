@@ -1,61 +1,123 @@
 import React, { useState, useEffect } from "react";
 import './CameraPanel.css';
-import { Collapse, InputNumber, Button } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { Collapse, Button, Space, Input } from 'antd';
+import { DeleteOutlined, EditOutlined, CheckOutlined, StopOutlined } from '@ant-design/icons';
 import ProductAdd from "./ProductAdd/ProductAdd";
+import CameraTable from "../CameraTable/CameraTable";
+import DeleteModal from "../DeleteModal/DeleteModal";
+import EditModal from "../EditModal/EditModal";
+import { serverApiWithToken } from "../../common/serverApi";
 
 const { Panel } = Collapse;
 
 const CameraPanel = (props) => {
 
+  const [add, setAdd] = useState(false);
   const [edit, setEdit] = useState(false);
+  const [editData, setEditData] = useState({});
+  const [editConfirm, setEditConfirm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
 
   return (
-    <Collapse style={{ marginBottom: "10px" }} >
-      <Panel header={props.camera.name}>
-        <h2>Tracking product:</h2>
-        <Collapse>
-          {props.camera.objects.map((p, idx) => <Panel
-            header={p.name}
-            key={idx}
-            extra={edit ? <DeleteOutlined
-              onClick={event => {
-                // If you don't want click extra trigger collapse, you can prevent this:
-                event.stopPropagation();
-                console.log('Delete');
-              }}
-              style={{ color: "red" }}
-            /> : null}
-          >
-            <div className="product-spec">
+    <React.Fragment>
+      {deleteConfirm ? <DeleteModal
+        visible={true}
+        ok={async () => {
+          let respond = await serverApiWithToken({ url: '/camera/' + props.data.id, method: 'delete' });
+          console.log(respond);
+          setDeleteConfirm(false);
+          props.getData();
+        }}
+        cancel={() => setDeleteConfirm(false)}
+        name={props.data.name}
+      /> : null}
+      {editConfirm ? <EditModal
+        visible={true}
+        ok={async () => {
+          let respond = await serverApiWithToken({
+            url: '/camera/' + props.data.id,
+            data: editData,
+            method: 'put'
+          });
+          console.log(respond);
+          setEditConfirm(false);
+          props.getData();
+          setEdit(false);
+        }}
+        cancel={() => setDeleteConfirm(false)}
+        name={props.data.name}
+      /> : null}
+      <Collapse style={{ marginBottom: "10px" }} >
+        <Panel
+          header={props.data.name}
+          extra={
+            edit ?
+              <Space size="middle">
+                <CheckOutlined
+                  style={{ color: 'green' }}
+                  onClick={() => {
+                    setEditConfirm(true);
+                  }}
+                />
+                <StopOutlined
+                  style={{ color: 'red' }}
+                  onClick={() => {
+                    setEdit(false);
+                    setEditData({});
+                  }}
+                />
+              </Space> :
+              <Space size="middle">
+                <EditOutlined
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setEdit(true);
+                  }}
+                />
+                <DeleteOutlined
+                  onClick={async (event) => {
+                    event.stopPropagation();
+                    setDeleteConfirm(true);
+                  }}
+                  style={{ color: "red" }}
+                />
+              </Space>
+          }
+        >
+          {edit ?
+            <React.Fragment>
               <h3>Name:</h3>
-              <p>{p.name}</p>
-              <h3>Quantity:</h3>
-              {edit ? <InputNumber min={1} defaultValue={p.quantity} /> : <p>{p.quantity}</p>}
-              <h3>Price:</h3>
-              <p>{p.price} VND</p>
-              <h3>Image:</h3>
-              <img className='preview-img' src={p.img} alt="preview" />
-              {edit ? <Button
-                type="primary"
-                style={{
-                  textAlign: "center",
-                  fontSize: "20px",
-                  width: "fit-content",
-                  height: "fit-content",
-                  margin: "auto"
+              <Input
+                style={{ width: '50%' }}
+                defaultValue={props.data.name}
+                onChange={(e) => {
+                  setEditData({ ...editData, name: e.target.value });
                 }}
-              >Confirm</Button> : null}
-            </div>
-          </Panel>)}
-        </Collapse>
-        {edit ? <ProductAdd /> : null}
-        <Button type="text" onClick={() => setEdit(!edit)}>
-          <span className="func-line">{edit ? "Cancel" : "Add/Remove tracking objects"}</span>
-        </Button>
-      </Panel>
-    </Collapse>
+              />
+              <h3>Password:</h3>
+              <Input.Password
+                style={{ width: '50%' }}
+                onChange={(e) => {
+                  setEditData({ ...editData, password: e.target.value });
+                }}
+              />
+            </React.Fragment>
+            : null
+          }
+          <h2>Tracking products:</h2>
+          <CameraTable data={props.data.products} cameraId={props.data.id} getData={props.getData} />
+          {add ? <ProductAdd
+            cameraId={props.data.id}
+            collapse={() => setAdd(false)}
+            getData={props.getData}
+          /> : null}
+          <Button type="text" onClick={() => setAdd(!add)}>
+            <span className="func-line">{add ? "Cancel" : "Add products"}</span>
+          </Button>
+        </Panel>
+      </Collapse>
+    </React.Fragment>
   );
 }
 
