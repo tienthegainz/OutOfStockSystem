@@ -6,6 +6,7 @@ from config import DATABASE
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
 import os
+import config
 # import logging
 # import logging.config
 
@@ -57,7 +58,7 @@ app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(
     DATABASE['path']) if DATABASE['type'] == 'sqlite3' else ''
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config["JWT_SECRET_KEY"] = "809f597a682d5d8c578f400da1d5dcba26ca366d855df2b4"
+app.config["JWT_SECRET_KEY"] = os.getenv('APP_KEY')
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=60)
 
 
@@ -71,5 +72,6 @@ if __name__ == '__main__':
     os.environ['SERVER_STATE'] = 'running'
     from app_router import *
     from app_socket import *
-    socketio.run(app, host='0.0.0.0', port='5001',
+    socketio.run(app, host=os.getenv('APP_HOST'),
+                 port=os.getenv('APP_PORT'),
                  debug=True, use_reloader=False)

@@ -2,7 +2,6 @@ from app import app, db
 from model import *
 from celery import Celery
 from flask_socketio import SocketIO
-from firebase_config import FIREBASE_CONFIG
 from fire_engine.fire import FireAlarm
 from datetime import datetime
 from PIL import Image
@@ -13,6 +12,18 @@ import io
 import base64
 import re
 import os
+import config
+
+FIREBASE_CONFIG = {
+    "apiKey": os.getenv('FIREBASE_API_KEY'),
+    "authDomain": os.getenv('FIREBASE_AUTH_DOMAIN'),
+    "projectId": os.getenv('FIREBASE_PROJECT_ID'),
+    "databaseURL": os.getenv('FIREBASE_DATABASE_URL'),
+    "storageBucket": os.getenv('FIREBASE_STORAGE_BUCKET'),
+    "messagingSenderId": os.getenv('FIREBASE_MESSAGING_SENDER_ID'),
+    "appId": os.getenv('FIREBASE_APP_ID'),
+    "measurementId": os.getenv('FIREBASE_MEASUREMENT_ID')
+}
 
 
 celery = Celery(

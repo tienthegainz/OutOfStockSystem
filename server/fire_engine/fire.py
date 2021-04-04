@@ -1,3 +1,4 @@
+import os
 import sys
 sys.path.append('/home/tienhv/GR/OutOfStockSystem/server')  # nopep8
 from shutil import Error
@@ -9,6 +10,7 @@ from fire_engine.model import resnet101
 import torch
 import torch.nn.functional as F
 from torchvision import transforms
+from config import FIRE_MODEL, SAMPLE_IMAGE
 
 
 class FireAlarm(metaclass=Singleton):
@@ -17,11 +19,11 @@ class FireAlarm(metaclass=Singleton):
     """
 
     def __init__(self):
-        self.fire_model = resnet101(num_classes=3)
+        self.fire_model = resnet101(num_classes=FIRE_MODEL['num_classes'])
         self.device = torch.device('cpu')
-        print("Booting fire detection model with {}".format(self.device))
+        print("Booting fire classification model with {}".format(self.device))
         self.fire_model.load_state_dict(torch.load(
-            '/home/tienhv/GR/OutOfStockSystem/server/fire_engine/FireNet_ver2_epoch_2_loss_0.09.pth', map_location=self.device))
+            FIRE_MODEL['weight'], map_location=self.device))
         self.fire_model.eval()
         self.size = 256
         self.tfms = transforms.Compose([
@@ -31,8 +33,7 @@ class FireAlarm(metaclass=Singleton):
                 [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
         # give RAM space
-        image = self.check_fire(Image.open(
-            '/home/tienhv/GR/OutOfStockSystem/server/storage/image/1/1.jpeg'))
+        image = self.check_fire(Image.open(SAMPLE_IMAGE))
         print("Booting fire detection: Done")
 
     def check_fire(self, image):
@@ -61,10 +62,3 @@ class FireAlarm(metaclass=Singleton):
         image = image.unsqueeze_(0).cpu()
         image = F.interpolate(image, size=self.size)
         return image
-
-
-if __name__ == "__main__":
-    f = FireAlarm()
-    # image = Image.open(
-    #     '/home/tienhv/GR/OutOfStockSystem/product_sample/gucci_perfume/1.jpeg')
-    # print(f.check_fire(image))

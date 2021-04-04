@@ -1,11 +1,16 @@
+from dotenv import dotenv_values, load_dotenv
+import os
+
+load_dotenv()
+
 
 DATABASE = {
-    'path': '/home/tienhv/GR/OutOfStockSystem/server/dev2.db',
+    'path': os.getenv('DATABASE_PATH'),
     'type': 'sqlite3'
 }
 
 STORAGE = {
-    'path': '/home/tienhv/GR/OutOfStockSystem/server/storage',
+    'path': os.getenv('STORAGE_PATH'),
     'type': 'local',
     'ann': 'ann'
 }
@@ -17,9 +22,9 @@ SEARCHER = {
 }
 
 DETECTOR = {
-    'num_classes': 3,
+    'num_classes': 4,
     'overlap_thres': 0.7,
-    'weight': '/home/tienhv/GR/OutOfStockSystem/server/detect_engine/checkpoint_18.pth'
+    'weight': os.getenv('DETECTOR_WEIGHT')
 }
 
 TRACKER = {
@@ -27,3 +32,14 @@ TRACKER = {
     'roi': [144, 250, 432, 330],
     'no_bbox_thres': 5,
 }
+
+FIRE_MODEL = {
+    'num_classes': 3,
+    'weight': os.getenv('FIRE_MODEL_WEIGHT')
+}
+
+EXTRACTOR = {
+    'weight': os.getenv('EXTRACTOR_WEIGHT')
+}
+
+SAMPLE_IMAGE = os.getenv('SAMPLE_IMAGE')
