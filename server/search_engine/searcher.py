@@ -24,6 +24,8 @@ class Searcher(metaclass=Singleton):
         search_config = config.SEARCHER
         self.graph_path = os.path.join(
             storage_config['path'], storage_config['ann'], 'index.bin')
+        self.index_path = os.path.join(
+            storage_config['path'], storage_config['ann'], 'current_index')
 
         self.p = hnswlib.Index(
             space=search_config['space'], dim=search_config['dim'])
@@ -31,8 +33,18 @@ class Searcher(metaclass=Singleton):
             print('Loading graph: ', self.graph_path)
             self.p.load_index(self.graph_path, max_elements=1000)
         else:
+            print('Init search tree')
             self.p.init_index(max_elements=1000, ef_construction=200, M=48)
             self.p.set_ef(20)
+
+        if os.path.isfile(self.index_path):
+            with open(self.index_path, 'r') as f:
+                a = f.readline()
+                print('Loading index {} => value: {} '.format(self.graph_path, a))
+                self.max_index = int(a)
+        else:
+            print('Init search tree index from 0')
+            self.max_index = 0
 
         self.k = 1
         self.threshold = search_config['threshold']
@@ -49,7 +61,7 @@ class Searcher(metaclass=Singleton):
                 print('Try to assign index with length {} to data with length {}'.format(
                     index.shape[0], data.shape[0]))
             else:
-                # self.max_index += index.shape[0]
+                self.max_index += index.shape[0]
                 self.p.add_items(data, index)
         except Exception as err:
             # TODO: Logging here
@@ -82,3 +94,5 @@ class Searcher(metaclass=Singleton):
     def save_graph(self):
         print("Saving index to '%s'" % self.graph_path)
         self.p.save_index(self.graph_path)
+        with open(self.index_path, 'w') as f:
+            f.write(str(self.max_index))

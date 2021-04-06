@@ -123,9 +123,10 @@ def handle_missing_object(data, room):
 
 
 @celery.task(ignore_result=True)
-def save_image_product(data, product_id):
+def save_image_product(data, product_id, product_index):
     print('Saving image products ...')
-    for image in data:
+    for i in range(len(data)):
+        image = data[i]
         image_name = random_name_generator() + '.jpg'
         send_image = io.BytesIO(
             base64.b64decode(image))
@@ -133,6 +134,7 @@ def save_image_product(data, product_id):
             "products/{}/{}".format(product_id, image_name)).put(send_image)
         url = firebase_storage.child(
             "products/{}/{}".format(product_id, image_name)).get_url(None)
-        image = ProductImage(url=url, product_id=product_id)
+        image = ProductImage(url=url, product_id=product_id,
+                             ann_id=product_index[i])
         db.session.add(image)
     db.session.commit()

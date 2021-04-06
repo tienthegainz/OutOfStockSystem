@@ -206,7 +206,7 @@ def search_product(data):
         # print('Search with index: ', index)
         if index is not None:
             product = Product.query.join(ProductImage).filter(
-                Product.id == ProductImage.product_id).filter(ProductImage.id == index).first()
+                Product.id == ProductImage.product_id).filter(ProductImage.ann_id == index).first()
             if product is not None:
                 products.append(product)
     return products
@@ -391,14 +391,12 @@ def add_product():
         features = extractor.extract_many(pil_images)
         product_qty = features.shape[0]
         # Get max_id to make index
-        max_product_image_id = db.session.query(
-            func.max(ProductImage.id)).scalar()
-        if max_product_image_id is None:
-            max_product_image_id = 0
-        product_index = np.arange(max_product_image_id+1,
-                                  max_product_image_id+1+product_qty)
-
-        save_image_product.delay(base64_images, product.id)
+        max_product_image_id = searcher.max_index
+        product_index = np.arange(max_product_image_id,
+                                  max_product_image_id+product_qty)
+        product_index_list = list(range(max_product_image_id,
+                                        max_product_image_id+product_qty))
+        save_image_product.delay(base64_images, product.id, product_index_list)
         searcher.add_products(features, product_index)
         searcher.save_graph()
 
