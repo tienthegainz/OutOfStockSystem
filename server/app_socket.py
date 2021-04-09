@@ -69,6 +69,6 @@ def on_join(data):
 
 @socketio.on('leave')
 def on_leave(data):
-    room = int(data['room'])
+    room = int(data['id'])
     leave_room(room)
     print('Left room: {}'.format(room))

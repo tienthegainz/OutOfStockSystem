@@ -38,6 +38,7 @@ class ProductImage(db.Model):
     url = db.Column(db.String, nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey(
         'products.id'), nullable=False)
+    ann_id = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
         return "<ProductImage(id = '%d', url='%s', product='%d')>" % (self.id, self.url, self.product_id)
