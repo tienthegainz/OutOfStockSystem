@@ -69,9 +69,11 @@ jwt = JWTManager(app)
 
 
 if __name__ == '__main__':
-    os.environ['SERVER_STATE'] = 'running'
+    os.environ['NO_FIRENET'] = 'true'
     from app_router import *
     from app_socket import *
     socketio.run(app, host=os.getenv('APP_HOST'),
                  port=os.getenv('APP_PORT'),
-                 debug=True, use_reloader=False)
+                 debug=False, use_reloader=False)
+    # from waitress import serve
+    # serve(app, host=os.getenv('APP_HOST'), port=os.getenv('APP_PORT'))

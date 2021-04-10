@@ -283,10 +283,13 @@ def check_missing(products, camera_id):
 # API
 
 
-@app.route('/product/detect/dummy', methods=['POST'])
-@camera_protected_api
-def watch_product_dummy():
-    socketio.emit('log', {'log': 'Dummy'}, broadcast=True)
+@app.route('/dummy', methods=['POST'])
+def dummy():
+    request_data = request.get_json()
+    socketio.emit('noti', {
+        'title': request_data['title'],
+        'message': request_data['message']
+    }, broadcast=True)
     return jsonify({'success': True})
 
 
