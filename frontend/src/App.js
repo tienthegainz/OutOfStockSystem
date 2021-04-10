@@ -59,15 +59,6 @@ const App = () => {
       return () => camera_socket.disconnect();
   }, []);
 
-  // useEffect(() => {
-  //   setTimeout(() => {
-  //     setNotiMessage({
-  //       title: "",
-  //       message: "",
-  //       display: false
-  //     })
-  //   }, 3000);
-  // }, [notiMessage]);
 
   return (<React.Fragment>
     {notiMessage.display ? <Notification
