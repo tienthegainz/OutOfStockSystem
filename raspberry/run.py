@@ -52,7 +52,7 @@ if __name__ == '__main__':
             multiTracker = None
             # Notify server about camera
             for _ in camera.capture_continuous(stream, 'jpeg', use_video_port=True):
-                if count % 100 == 0:
+                if count % 450 == 0:
                     # POST image to server for detecting
                     multiTracker = cv2.MultiTracker_create()
                     base64_image = b64encode(
@@ -105,7 +105,7 @@ if __name__ == '__main__':
                                 "password": camera_info['password'],
                                 "image": base64_image,
                                 "info": states,
-                                "fire_check": (count % 50 == 0)
+                                "fire_check": (count % 300 == 0)
                             })
                     else:
                         socketIO.emit(
@@ -113,7 +113,7 @@ if __name__ == '__main__':
                                 "id": camera_info['id'],
                                 "password": camera_info['password'],
                                 "image": base64_image,
-                                "fire_check": (count % 50 == 0)
+                                "fire_check": (count % 300 == 0)
                             })
 
                     print('sending image after {}'.format(time.time()-t))
