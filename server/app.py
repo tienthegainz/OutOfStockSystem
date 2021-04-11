@@ -6,6 +6,7 @@ from config import DATABASE
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
 import os
+import eventlet
 import config
 # import logging
 # import logging.config
@@ -69,11 +70,10 @@ jwt = JWTManager(app)
 
 
 if __name__ == '__main__':
+    eventlet.monkey_patch()
     os.environ['NO_FIRENET'] = 'true'
     from app_router import *
     from app_socket import *
     socketio.run(app, host=os.getenv('APP_HOST'),
                  port=os.getenv('APP_PORT'),
                  debug=False, use_reloader=False)
-    # from waitress import serve
-    # serve(app, host=os.getenv('APP_HOST'), port=os.getenv('APP_PORT'))
