@@ -63,7 +63,7 @@ const App = () => {
   return (<React.Fragment>
     {notiMessage.display ? <Notification
       ignore={false}
-      timeout={3000}
+      timeout={0}
       title={notiMessage.title}
       options={
         {
