@@ -33,7 +33,7 @@ const CameraForm = (props) => {
         <Form.Item
           name="name"
           label="Name"
-          required
+          rules={[{ required: true, message: 'Please input camera\'s name!' }]}
           tooltip="Example: Row 1 Column A"
         >
           <Input />
@@ -41,7 +41,7 @@ const CameraForm = (props) => {
         <Form.Item
           name="password"
           label="Password"
-          required
+          rules={[{ required: true, message: 'Please input camera\'s password!' }]}
           tooltip="Do not leak it out"
         >
           <Input.Password

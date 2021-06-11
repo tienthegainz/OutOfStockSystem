@@ -38,7 +38,7 @@ const RegisterForm = (props) => {
         <Form.Item
           name="username"
           label="Username"
-          required
+          rules={[{ required: true, message: 'Please input employee\'s username!' }]}
           tooltip="The username must be unique"
         >
           <Input />
@@ -46,7 +46,7 @@ const RegisterForm = (props) => {
         <Form.Item
           name="password"
           label="Password"
-          required
+          rules={[{ required: true, message: 'Please input employee\'s password!' }]}
           tooltip="Do not show password to other"
         >
           <Input.Password

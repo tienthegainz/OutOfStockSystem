@@ -11,7 +11,7 @@ DATABASE = {
 
 STORAGE = {
     'path': os.getenv('STORAGE_PATH'),
-    'type': 'local',
+    'type': ['local', 'firebase'],
     'ann': 'ann'
 }
 
@@ -22,8 +22,8 @@ SEARCHER = {
 }
 
 DETECTOR = {
-    'num_classes': 4,
     'overlap_thres': 0.7,
+    'num_classes': 4,
     'weight': os.getenv('DETECTOR_WEIGHT')
 }
 

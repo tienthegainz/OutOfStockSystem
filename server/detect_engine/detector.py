@@ -82,8 +82,8 @@ class Detector(metaclass=Singleton):
                 S_j = (x2_j-x1_j)*(y2_j-y1_j)
                 S_ij = max(0, min(x2_i, x2_j) - max(x1_i, x1_j)) * \
                     max(0, min(y2_i, y2_j) - max(y1_i, y1_j))
-                print("i={}, j={}, S_i={}, S_ij={}, p={}".format(
-                    i, j, S_i, S_ij, S_ij/S_i))
+                # print("i={}, j={}, S_i={}, S_ij={}, p={}".format(
+                #     i, j, S_i, S_ij, S_ij/S_i))
                 if (S_ij/S_i) > self.config['overlap_thres']:
                     bboxes[j if S_j < S_i else i] = None
 

@@ -31,8 +31,7 @@ celery = Celery(
     backend=app.config['CELERY_RESULT_BACKEND'])
 
 fire_alarm = FireAlarm() if not (
-    os.environ.get('SERVER_STATE') == 'running') else None
-# fire_alarm = FireAlarm()
+    os.environ.get('NO_FIRENET') == 'true') else None
 firebase_app = pyrebase.initialize_app(FIREBASE_CONFIG)
 firebase_storage = firebase_app.storage()
 
@@ -47,14 +46,22 @@ def fire_alert(data, room):
     print('Detecting fire.... Result: {}'.format(result))
     with app.app_context():
         if result:
+            # Log to UI
             socketio.emit('fire', {'fire': result}, room=room)
             t = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
             message = '[{}] WARNING There may be fire. Please check'.format(t)
             socketio.emit(
                 'log', {'log': message})
+            # Notification
+            camera = Camera.query.filter(Camera.id == room).first()
+            socketio.emit('noti', {
+                'title': camera.name,
+                'message': message
+            }, broadcast=True)
+            # Save log to DB
             log = LogText(message=message, time=t, camera_id=room)
             log.save_to_db()
-            # Save image
+
             send_image = io.BytesIO(
                 base64.b64decode(re.sub("data:image/jpeg;base64", '', data)))
             image_name = random_name_generator() + '.jpg'
@@ -74,12 +81,18 @@ def handle_out_of_roi(data, room):
     print('Saving image and send log ...')
     t = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     with app.app_context():
-        # Log
+        # Log to UI
         message = '[{}] Object is out of ROI. Saving image...'.format(t)
         socketio.emit('log', {'log': message}, room=room)
         log = LogText(message=message, time=t, camera_id=room)
         db.session.add(log)
-        # Image
+        # Notification
+        camera = Camera.query.filter(Camera.id == room).first()
+        socketio.emit('noti', {
+            'title': camera.name,
+            'message': message
+        }, broadcast=True)
+        # Save image to DB
         send_image = io.BytesIO(
             base64.b64decode(re.sub("data:image/jpeg;base64", '', data)))
         image_name = random_name_generator() + '.jpg'
@@ -100,12 +113,19 @@ def handle_missing_object(data, room):
     print('Saving image and send log ...')
     t = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     with app.app_context():
-        # Log
+        # Log to UI
         logs = ['{}: {}'.format(c['name'], c['quantity'])
                 for c in data['missing']]
         message = '[{}] WARNING: May be missing: {}. Please check. Saving image...'.format(
             t, ', '.join(logs))
         socketio.emit('log', {'log': message}, room=room)
+        # Notification
+        camera = Camera.query.filter(Camera.id == room).first()
+        socketio.emit('noti', {
+            'title': camera.name,
+            'message': message
+        }, broadcast=True)
+        # Logging to db
         log = LogText(message=message, time=t, camera_id=room)
         db.session.add(log)
         # Image

@@ -31,13 +31,13 @@ class TrackerMulti(metaclass=Singleton):
                         if state['id'] == element['id']:
                             check_index = idx
                     if check_index >= 0:
-                        print('Update object\'s position with ID: {}'.format(
-                            state['id']))
+                        # print('Update object\'s position with ID: {}'.format(
+                        #     state['id']))
                         self.objs[check_index] = {
                             **state, 'is_out': self.objs[check_index]['is_out']}
                     else:
-                        print('Add new object\'s position with ID: {}'.format(
-                            state['id']))
+                        # print('Add new object\'s position with ID: {}'.format(
+                        #     state['id']))
                         bbox = state['bbox']
                         center = (int(bbox[0] + bbox[2]/2),
                                   int(bbox[1] + bbox[3]/2))

@@ -155,7 +155,7 @@ def get_user():
         results = User.query.all()
         return jsonify({'success': True, 'users': [r.to_dict() for r in results]})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route("/user/<id>", methods=["PUT"])
@@ -174,7 +174,7 @@ def change_user(id):
         else:
             return jsonify({'success': False, 'msg': 'User not found'}), 400
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route("/user/<id>", methods=["DELETE"])
@@ -188,7 +188,7 @@ def delete_user(id):
         else:
             return jsonify({'success': False, 'msg': 'User not found'}), 400
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 ######################## Products API ########################
@@ -283,15 +283,7 @@ def check_missing(products, camera_id):
 # API
 
 
-@app.route('/product/detect/dummy', methods=['POST'])
-@camera_protected_api
-def watch_product_dummy():
-    socketio.emit('log', {'log': 'Dummy'}, broadcast=True)
-    return jsonify({'success': True})
-
-
 @app.route('/product/detect', methods=['POST'])
-@camera_protected_api
 def watch_product():
     try:
         request_data = request.get_json()
@@ -326,7 +318,7 @@ def watch_product():
         log.save_to_db()
         return jsonify({'success': True, 'info': info})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/product', methods=['GET'])
@@ -336,7 +328,7 @@ def get_product():
         results = Product.query.all()
         return jsonify({'success': True, 'products': [r.to_dict_bulk() for r in results]})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/product/<id>', methods=['PUT'])
@@ -354,7 +346,7 @@ def change_product(id):
         product.save_to_db()
         return jsonify({'success': True, 'product': product.to_dict()}), 200
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/product/<id>', methods=['DELETE'])
@@ -367,7 +359,7 @@ def delete_product(id):
         product.delete_in_db()
         return jsonify({'success': True})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/product', methods=['POST'])
@@ -377,10 +369,8 @@ def add_product():
         request_data = request.get_json()
         pil_images = []
         base64_images = []
-        product = Product(
-            name=request_data['name'], price=request_data['price'])
-        product.save_to_db()
 
+        # Check for image legit
         for image_str in request_data['images']:
             imageb64 = re.sub('^data:image/.+;base64,', '', image_str)
             image_data = base64.b64decode(imageb64)
@@ -388,6 +378,11 @@ def add_product():
             pil_images.append(image)
             base64_images.append(imageb64)
 
+        product = Product(
+            name=request_data['name'], price=request_data['price'])
+        product.save_to_db()
+
+        # Get features from images
         features = extractor.extract_many(pil_images)
         product_qty = features.shape[0]
         # Get max_id to make index
@@ -402,19 +397,21 @@ def add_product():
 
         return jsonify({'success': True, 'product': product.to_dict()})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 ######################## Camera API ########################
 
 
 @app.route('/camera/active', methods=['POST'])
-@camera_protected_api
 def add_active_camera():
     try:
-        camera_id = request.get_json()['id']
+        data = request.get_json()
+        camera_id = data['id']
         camera = Camera.query.filter(Camera.id == camera_id).first()
         if camera is not None:
+            if camera.password != data['password']:
+                return jsonify({'success': False, 'msg': 'Wrong password'}), 400
             camera.active = True
             camera.save_to_db()
 
@@ -423,7 +420,7 @@ def add_active_camera():
                 cam.to_dict() for cam in cameras if cam.active]}, broadcast=True)
         return jsonify({'success': True})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/camera/active', methods=['GET'])
@@ -433,16 +430,18 @@ def get_active_camera():
         cameras = Camera.query.all()
         return jsonify({'success': True, 'cameras': [cam.to_dict() for cam in cameras if cam.active]})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/camera/active/<id>', methods=['DELETE'])
-@camera_protected_api
 def delete_active_camera(id):
     try:
-        camera_id = int(id)
+        data = request.get_json()
+        camera_id = data['id']
         camera = Camera.query.filter(Camera.id == camera_id).first()
         if camera is not None:
+            if camera.password != data['password']:
+                return jsonify({'success': False, 'msg': 'Wrong password'}), 400
             camera.active = False
             camera.save_to_db()
             cameras = Camera.query.all()
@@ -452,7 +451,7 @@ def delete_active_camera(id):
 
         return jsonify({'success': True, 'deleted_cameras': camera.to_dict()})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/camera', methods=['GET'])
@@ -462,7 +461,7 @@ def get_camera():
         results = Camera.query.all()
         return jsonify({'success': True, 'cameras': [result.to_dict() for result in results]})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/camera', methods=['POST'])
@@ -476,7 +475,7 @@ def add_camera():
         camera.save_to_db()
         return jsonify({'success': True, 'camera': camera.to_dict()}), 200
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/camera/<id>', methods=['PUT'])
@@ -494,7 +493,7 @@ def change_camera(id):
         camera.save_to_db()
         return jsonify({'success': True, 'camera': camera.to_dict()}), 200
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/camera/<id>', methods=['DELETE'])
@@ -507,7 +506,7 @@ def delete_camera(id):
         camera.delete_in_db()
         return jsonify({'success': True, 'camera': camera.to_dict()}), 200
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/camera/product', methods=['GET'])
@@ -532,7 +531,7 @@ def get_camera_product():
             data.append(cam)
         return jsonify({'success': True, 'cameras': data})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/camera/product', methods=['POST'])
@@ -563,7 +562,7 @@ def add_camera_product():
 
         return jsonify({'success': True, 'added': camera_product.to_dict()})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/camera/<camera_id>/product/<product_id>', methods=['PUT'])
@@ -584,7 +583,7 @@ def change_product_quantity(camera_id, product_id):
             result.save_to_db()
             return jsonify({'success': True, 'product': result.to_dict()})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/camera/<camera_id>/product/<product_id>', methods=['DELETE'])
@@ -599,7 +598,7 @@ def delete_camera_product(camera_id, product_id):
             result.delete_in_db()
             return jsonify({'success': True, 'deleted': result.to_dict()})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 ######################## Logger API ########################
 
@@ -624,7 +623,7 @@ def get_all_log_text():
         texts = [r.to_dict() for r in results]
         return jsonify({'success': True, 'data': texts})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/log/text/<id>', methods=['POST'])
@@ -655,7 +654,7 @@ def get_log_text_by_id(id):
         texts = [r.to_dict() for r in results]
         return jsonify({'success': True, 'data': texts})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/log/image', methods=['POST'])
@@ -678,7 +677,7 @@ def get_all_log_image():
         images = [r.to_dict() for r in results]
         return jsonify({'success': True, 'data': images})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/log/image/count/<id>', methods=['POST'])
@@ -693,7 +692,7 @@ def count_log_image_by_id(id):
         # print(total)
         return jsonify({'success': True, 'total': total})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500
 
 
 @app.route('/log/image/<id>', methods=['POST'])
@@ -717,4 +716,4 @@ def get_log_image_by_id(id):
         images = [r.to_dict() for r in results]
         return jsonify({'success': True, 'data': images})
     except Exception as err:
-        return jsonify({'success': False, 'msg': err}), 500
+        return jsonify({'success': False, 'msg': repr(err)}), 500

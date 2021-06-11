@@ -25,6 +25,7 @@ def track_image(data, info, room):
         update_ok = tracker.update(np_image)
     draw_img = tracker.draw()
     if tracker.check_out_roi() or not update_ok:
+        print('Out of ROI')
         handle_out_of_roi.delay(data, room)
 
     result_image = Image.fromarray(draw_img.astype(np.uint8))
