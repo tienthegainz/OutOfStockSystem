@@ -65,7 +65,7 @@ const ProductForm = (props) => {
         <Form.Item
           name="name"
           label="Name"
-          required
+          rules={[{ required: true, message: 'Please input product\'s name!' }]}
           tooltip="The product name must be unique"
         >
           <Input />
@@ -73,7 +73,7 @@ const ProductForm = (props) => {
         <Form.Item
           name="price"
           label="Price"
-          required
+          rules={[{ required: true, message: 'Please input product\'s price!' }]}
           tooltip="Price in VND"
         >
           <InputNumber
@@ -85,7 +85,7 @@ const ProductForm = (props) => {
         <Form.Item
           name="images"
           label="Upload"
-          required
+          rules={[{ required: true, message: 'Please upload product\'s sample image!' }]}
           tooltip="Recommend 3 to 4 image"
           valuePropName="fileList"
           getValueFromEvent={normFile}
