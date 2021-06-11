@@ -46,12 +46,12 @@ class FireAlarm(metaclass=Singleton):
             predicted = predicted.item()
             if predicted != 1:
                 return True
-            else:
-                output_normal = [val.item() for val in torch.squeeze(output)]
-                variance = output_normal[1] - output_normal[0]
-                percentage = abs(variance/output_normal[1])
-                if percentage < 0.25:
-                    return True
+            # else:
+            #     output_normal = [val.item() for val in torch.squeeze(output)]
+            #     variance = output_normal[1] - output_normal[0]
+            #     percentage = abs(variance/output_normal[1])
+            #     if percentage < 0.1:
+            #         return True
             return False
         except Exception as e:
             print(e)
