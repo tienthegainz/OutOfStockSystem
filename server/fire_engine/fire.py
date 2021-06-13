@@ -21,7 +21,6 @@ class FireAlarm(metaclass=Singleton):
     def __init__(self):
         self.fire_model = resnet101(num_classes=FIRE_MODEL['num_classes'])
         self.device = torch.device('cpu')
-        print("Booting fire classification model with {}".format(self.device))
         self.fire_model.load_state_dict(torch.load(
             FIRE_MODEL['weight'], map_location=self.device))
         self.fire_model.eval()
@@ -34,7 +33,7 @@ class FireAlarm(metaclass=Singleton):
         ])
         # give RAM space
         image = self.check_fire(Image.open(SAMPLE_IMAGE))
-        print("Booting fire detection: Done")
+        print("Fire classification model booted with {}".format(self.device))
 
     def check_fire(self, image):
         t = time.time()

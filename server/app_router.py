@@ -212,14 +212,19 @@ def search_product(data):
     return products
 
 
-def detect_search_object(image):
+def detect_search_object(image, camera_id):
     # Detect candidate object => check what object it is
     data = detector.predict(image)
     if data['products']:
         products = search_product(data['products'])
         bboxes = data['bboxes']
+
+        cam = Camera.query.filter(
+        Camera.id == camera_id).first()
+        product_list = [x.product_id for x in cam.products]
+
         info = [{'id': random_name_generator(), 'bbox': bboxes[i], 'product_id': products[i].id}
-                for i in range(len(products))]
+                for i in range(len(products)) if products[i].id in product_list]
         # track image
         tracker.update(data['image'], info)
         # draw object
@@ -230,7 +235,7 @@ def detect_search_object(image):
         base64_image = base64.b64encode(
             img_byte.getvalue()).decode('utf-8')
         # count object
-        c = count_object(products)
+        c = count_object(products, product_list)
         return base64_image, info, c
     else:
         img_byte = io.BytesIO()
@@ -240,17 +245,18 @@ def detect_search_object(image):
         return base64_image, [], []
 
 
-def count_object(products):
+def count_object(products, product_list):
     result = []
     pid = []
     for product in products:
-        if product.id not in pid:
+        if product.id not in pid and product.id in product_list:
             pid.append(product.id)
             result.append(
                 {'id': product.id, 'name': product.name, 'quantity': 1})
-        else:
+        elif product.id in product_list:
             a = pid.index(product.id)
             result[a]['quantity'] += 1
+    
     return result
 
 
@@ -295,7 +301,7 @@ def watch_product():
         # clear tracker
         tracker.clear_all_objects()
         # processing
-        result_image, info, count = detect_search_object(image)
+        result_image, info, count = detect_search_object(image, room)
         missing = check_missing(count, room)
         if missing:
             handle_missing_object.delay(
@@ -410,7 +416,7 @@ def add_active_camera():
         camera_id = data['id']
         camera = Camera.query.filter(Camera.id == camera_id).first()
         if camera is not None:
-            if camera.password != data['password']:
+            if not camera.verify_hash(data['password']):
                 return jsonify({'success': False, 'msg': 'Wrong password'}), 400
             camera.active = True
             camera.save_to_db()
@@ -440,7 +446,7 @@ def delete_active_camera(id):
         camera_id = data['id']
         camera = Camera.query.filter(Camera.id == camera_id).first()
         if camera is not None:
-            if camera.password != data['password']:
+            if not camera.verify_hash(data['password']):
                 return jsonify({'success': False, 'msg': 'Wrong password'}), 400
             camera.active = False
             camera.save_to_db()

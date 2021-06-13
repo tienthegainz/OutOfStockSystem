@@ -22,14 +22,13 @@ class Detector(metaclass=Singleton):
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
         self.config = DETECTOR
-        print("Booting detection model with {}".format(self.device))
         self.detect_model = self.init_model()
         self.tfms = self.init_transform()
         self.unnormalize = UnNormalizer()
         # give RAM space
         img = Image.open(SAMPLE_IMAGE)
         self.predict(img)
-        print("Booting detection: Done")
+        print("Detection model booted with {}".format(self.device))
 
     def read_checkpoint(self):
         checkpoint = torch.load(self.config['weight'])

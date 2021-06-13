@@ -14,10 +14,9 @@ class Extractor(metaclass=Singleton):
     """
 
     def __init__(self, size=248):
-        print('Init Extraction engine')
         self.model = resnet50()
         self.device = torch.device('cpu')
-        print("Booting extraction model with {}".format(self.device))
+        
         self.model.load_state_dict(torch.load(
             EXTRACTOR['weight'], map_location=self.device))
         self.size = size
@@ -28,6 +27,7 @@ class Extractor(metaclass=Singleton):
                 [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
         self.extract(PIL.Image.open(SAMPLE_IMAGE))
+        print("Extraction model booted with {}".format(self.device))
 
     def extract(self, image):
         # Return numpy array

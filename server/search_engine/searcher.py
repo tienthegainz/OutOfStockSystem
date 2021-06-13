@@ -19,7 +19,6 @@ class Searcher(metaclass=Singleton):
                 space: distance algorithm (L2, Inner product, cosine)
                 threshold: similarity threshold
         """
-        print('Init search engine')
         storage_config = config.STORAGE
         search_config = config.SEARCHER
         self.graph_path = os.path.join(
@@ -40,7 +39,7 @@ class Searcher(metaclass=Singleton):
         if os.path.isfile(self.index_path):
             with open(self.index_path, 'r') as f:
                 a = f.readline()
-                print('Loading index {} => value: {} '.format(self.graph_path, a))
+                print('Loading index {} => value: {} '.format(self.index_path, a))
                 self.max_index = int(a)
         else:
             print('Init search tree index from 0')
@@ -50,6 +49,7 @@ class Searcher(metaclass=Singleton):
         self.threshold = search_config['threshold']
 
         self.extractor = Extractor()
+        print('Searcher booted with index: {}'.format(self.max_index))
 
     def add_products(self, data, index):
         try:
