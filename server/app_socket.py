@@ -43,8 +43,11 @@ def track_image(data, info, room):
 def on_send_image(data):
     room = int(data['id'])
     try:
-        if data['fire_check'] == True:
+        if data['fire_check']:
             fire_alert.delay(data['image'], room)
+        
+        if data['track_start']:
+            socketio.emit('ready', {'ready': True}, room=room, broadcast=True)
 
         info = data['info'] if 'info' in data else None
 

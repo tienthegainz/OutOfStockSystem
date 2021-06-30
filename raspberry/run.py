@@ -64,11 +64,10 @@ if __name__ == '__main__':
                     respond = requests.post(
                         '{}/product/detect'.format(post_url), json={
                             'id': camera_info['id'],
-                            "password": camera_info['password'],
                             "image": base64_image
                         }, timeout=4)
                     if respond.status_code != 200:
-                        raise Exception('Request error')
+                        raise Exception('Request error {}'.format(respond.status_code))
                     data = np.frombuffer(stream.getvalue(), dtype=np.uint8)
                     image = cv2.imdecode(data, 1)
                     image = image[:, :, ::-1]
@@ -107,10 +106,10 @@ if __name__ == '__main__':
                             socketIO.emit(
                                 'camera', {
                                     "id": camera_info['id'],
-                                    "password": camera_info['password'],
                                     "image": base64_image,
                                     "info": states,
-                                    "fire_check": (count % 300 == 0)
+                                    "fire_check": (count % 300 == 0),
+                                    "track_start": (count % 450 == 1)
                                 })
                         else:
                             socketIO.emit(
@@ -118,7 +117,8 @@ if __name__ == '__main__':
                                     "id": camera_info['id'],
                                     "password": camera_info['password'],
                                     "image": base64_image,
-                                    "fire_check": (count % 300 == 0)
+                                    "fire_check": (count % 300 == 0),
+                                    "track_start": (count % 450 == 1)
                                 })
 
                         print('sending image after {}'.format(time.time()-t))

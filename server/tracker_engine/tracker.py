@@ -11,13 +11,13 @@ class TrackerMulti(metaclass=Singleton):
     """
 
     def __init__(self):
-        print('Init Tracking engine')
         self.frame = None
         self.config = TRACKER
         # {id: string, bbox: list[], is_out: bool}
         self.objs = []
         # count for no detect frame
         self.count = 0
+        print('Tracking engine booted')
 
     def update(self, frame, states=[]):
         # If false => Save image
