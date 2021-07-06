@@ -36,7 +36,7 @@ const CameraForm = (props) => {
           rules={[{ required: true, message: 'Please input camera\'s name!' }]}
           tooltip="Example: Row 1 Column A"
         >
-          <Input />
+          <Input style={{ width: '50%' }} />
         </Form.Item>
         <Form.Item
           name="password"
@@ -46,6 +46,7 @@ const CameraForm = (props) => {
         >
           <Input.Password
             placeholder="Input password"
+            style={{ width: '50%' }}
           />
         </Form.Item>
         <Form.Item>

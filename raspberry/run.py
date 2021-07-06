@@ -8,7 +8,6 @@ import cv2
 import sys
 import signal
 import socketio
-from socketio.exceptions import BadNamespaceError
 
 socket_url = 'http://10.42.0.1'
 post_url = 'http://10.42.0.1:5001'
@@ -33,13 +32,10 @@ if __name__ == '__main__':
     # Notify server about camera
     respond = requests.post(
         '{}/camera/active'.format(post_url), json=camera_info, timeout=2)
-
     if respond.status_code != 200:
-        print('Activate camera failed with respond: {}'.format(respond.json()))
-        raise Exception('Request error')
-    else:
-        print('Registered camera with id: {}'.format(camera_info['id']))
-
+        raise Exception('Request error {}'.format(respond))
+    print('Register camera with id: {} <== {}'.format(
+        camera_info['id'], respond.json()))
     try:
         socketIO = socketio.Client()
         socketIO.connect('http://10.42.0.1:5001')
@@ -56,7 +52,8 @@ if __name__ == '__main__':
             multiTracker = None
             # Notify server about camera
             for _ in camera.capture_continuous(stream, 'jpeg', use_video_port=True):
-                if count % 450 == 0:
+                if count % 100 == 0:
+                    print('Detect the shelf')
                     # POST image to server for detecting
                     multiTracker = cv2.MultiTracker_create()
                     base64_image = b64encode(
@@ -67,7 +64,7 @@ if __name__ == '__main__':
                             "image": base64_image
                         }, timeout=4)
                     if respond.status_code != 200:
-                        raise Exception('Request error {}'.format(respond.status_code))
+                        raise Exception('Request error {} - {}'.format(respond.status_code, respond.json()['msg']))
                     data = np.frombuffer(stream.getvalue(), dtype=np.uint8)
                     image = cv2.imdecode(data, 1)
                     image = image[:, :, ::-1]
@@ -106,10 +103,11 @@ if __name__ == '__main__':
                             socketIO.emit(
                                 'camera', {
                                     "id": camera_info['id'],
+                                    "password": camera_info['password'],
                                     "image": base64_image,
                                     "info": states,
-                                    "fire_check": (count % 300 == 0),
-                                    "track_start": (count % 450 == 1)
+                                    "fire_check": (count % 120 == 0),
+				    "track_start": (count % 100 == 1)
                                 })
                         else:
                             socketIO.emit(
@@ -117,13 +115,14 @@ if __name__ == '__main__':
                                     "id": camera_info['id'],
                                     "password": camera_info['password'],
                                     "image": base64_image,
-                                    "fire_check": (count % 300 == 0),
-                                    "track_start": (count % 450 == 1)
+                                    "fire_check": (count % 120 == 0),
+				    "track_start": (count % 100 == 1)
                                 })
 
                         print('sending image after {}'.format(time.time()-t))
                     except BadNamespaceError:
                         print('The socket message has been lost')
+
                 count += 1
                 # Reset the stream for the next capture
                 stream.seek(0)

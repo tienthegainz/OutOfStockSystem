@@ -49,12 +49,13 @@ def on_send_image(data):
         if data['track_start']:
             socketio.emit('ready', {'ready': True}, room=room, broadcast=True)
 
-        info = data['info'] if 'info' in data else None
+        if not tracker.isPausing():
+            info = data['info'] if 'info' in data else None
 
-        result_image = track_image(data['image'], info, room)
-        # print('Sending data to room {}'.format(room))
-        socketio.emit('image', {'image': result_image},
-                      room=room, broadcast=True)
+            result_image = track_image(data['image'], info, room)
+            # print('Sending data to room {}'.format(room))
+            socketio.emit('image', {'image': result_image},
+                        room=room, broadcast=True)
     except Exception as err:
         print(err)
 

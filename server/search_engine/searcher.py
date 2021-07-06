@@ -49,7 +49,7 @@ class Searcher(metaclass=Singleton):
         self.threshold = search_config['threshold']
 
         self.extractor = Extractor()
-        print('Searcher booted with index: {}'.format(self.max_index))
+        print('Searcher booted with index: {} - thres: {}'.format(self.max_index, self.threshold))
 
     def add_products(self, data, index):
         try:

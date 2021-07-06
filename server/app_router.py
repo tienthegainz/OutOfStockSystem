@@ -226,7 +226,7 @@ def detect_search_object(image, camera_id):
         info = [{'id': random_name_generator(), 'bbox': bboxes[i], 'product_id': products[i].id}
                 for i in range(len(products)) if products[i].id in product_list]
         # track image
-        tracker.update(data['image'], info)
+        tracker.update(data['image'], info, True)
         # draw object
         draw_img = tracker.draw()
         result_image = Image.fromarray(draw_img.astype(np.uint8))
@@ -292,6 +292,8 @@ def check_missing(products, camera_id):
 @app.route('/product/detect', methods=['POST'])
 def watch_product():
     try:
+        # Pause tracker
+        tracker.pause()
         request_data = request.get_json()
         image_data = base64.b64decode(request_data['image'])
         image = Image.open(io.BytesIO(image_data))
@@ -319,6 +321,8 @@ def watch_product():
                       broadcast=True)
         socketio.emit('image', {'image': result_image},
                       room=room, broadcast=True)
+        # Unpause tracker
+        tracker.unpause()
         # Add log to db
         log = LogText(message=message, time=t, camera_id=room)
         log.save_to_db()

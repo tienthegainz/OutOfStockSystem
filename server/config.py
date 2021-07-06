@@ -18,7 +18,7 @@ STORAGE = {
 SEARCHER = {
     'dim': 2048,
     'space': 'l2',
-    'threshold': 4
+    'threshold': 3.2
 }
 
 DETECTOR = {
