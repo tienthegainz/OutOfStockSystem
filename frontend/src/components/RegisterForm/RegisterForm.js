@@ -41,7 +41,7 @@ const RegisterForm = (props) => {
           rules={[{ required: true, message: 'Please input employee\'s username!' }]}
           tooltip="The username must be unique"
         >
-          <Input />
+          <Input style={{ width: '50%' }} />
         </Form.Item>
         <Form.Item
           name="password"
@@ -51,6 +51,7 @@ const RegisterForm = (props) => {
         >
           <Input.Password
             placeholder="input password"
+            style={{ width: '50%' }}
           />
         </Form.Item>
         <Form.Item>

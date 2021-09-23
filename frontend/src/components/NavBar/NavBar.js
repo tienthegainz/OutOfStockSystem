@@ -5,14 +5,14 @@ import {
   VideoCameraAddOutlined, AppstoreAddOutlined,
   LogoutOutlined, UserOutlined
 } from '@ant-design/icons';
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useHistory } from "react-router-dom";
 import './NavBar.css';
 import { useDispatch, useSelector } from "react-redux";
 import allActions from "../../actions";
 
 
 const NavBar = (props) => {
-
+  const history = useHistory();
   const location = useLocation();
   const dispatch = useDispatch();
   const isAdmin = useSelector(state => state.currentUser.user.admin);
@@ -51,6 +51,7 @@ const NavBar = (props) => {
           icon={<LogoutOutlined />}
           onClick={() => {
             dispatch(allActions.userActions.logout());
+            history.push('/');
           }}
         >
           Logout

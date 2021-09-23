@@ -68,7 +68,7 @@ const ProductForm = (props) => {
           rules={[{ required: true, message: 'Please input product\'s name!' }]}
           tooltip="The product name must be unique"
         >
-          <Input />
+          <Input style={{ width: '50%' }} />
         </Form.Item>
         <Form.Item
           name="price"

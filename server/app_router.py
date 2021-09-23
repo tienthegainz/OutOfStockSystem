@@ -22,9 +22,6 @@ import re
 detector = Detector()
 extractor = Extractor()
 searcher = Searcher()
-# extractor = None
-# searcher = None
-# detector = None
 tracker = TrackerMulti()
 
 
@@ -209,6 +206,8 @@ def search_product(data):
                 Product.id == ProductImage.product_id).filter(ProductImage.ann_id == index).first()
             if product is not None:
                 products.append(product)
+        else:
+            products.append(None)
     return products
 
 
@@ -222,11 +221,19 @@ def detect_search_object(image, camera_id):
         cam = Camera.query.filter(
         Camera.id == camera_id).first()
         product_list = [x.product_id for x in cam.products]
+        info = []
 
-        info = [{'id': random_name_generator(), 'bbox': bboxes[i], 'product_id': products[i].id}
-                for i in range(len(products)) if products[i].id in product_list]
+        for i in range(len(products)):
+            if products[i] is not None:
+                if products[i].id in product_list:
+                    info.append({
+                        'id': random_name_generator(), 
+                        'bbox': bboxes[i], 
+                        'product_id': products[i].id
+                    })
+
         # track image
-        tracker.update(data['image'], info)
+        tracker.update(data['image'], info, True)
         # draw object
         draw_img = tracker.draw()
         result_image = Image.fromarray(draw_img.astype(np.uint8))
@@ -249,13 +256,14 @@ def count_object(products, product_list):
     result = []
     pid = []
     for product in products:
-        if product.id not in pid and product.id in product_list:
-            pid.append(product.id)
-            result.append(
-                {'id': product.id, 'name': product.name, 'quantity': 1})
-        elif product.id in product_list:
-            a = pid.index(product.id)
-            result[a]['quantity'] += 1
+        if product is not None:
+            if product.id not in pid and product.id in product_list:
+                pid.append(product.id)
+                result.append(
+                    {'id': product.id, 'name': product.name, 'quantity': 1})
+            elif product.id in product_list:
+                a = pid.index(product.id)
+                result[a]['quantity'] += 1
     
     return result
 
@@ -292,6 +300,8 @@ def check_missing(products, camera_id):
 @app.route('/product/detect', methods=['POST'])
 def watch_product():
     try:
+        # Pause tracker
+        tracker.pause()
         request_data = request.get_json()
         image_data = base64.b64decode(request_data['image'])
         image = Image.open(io.BytesIO(image_data))
@@ -319,6 +329,8 @@ def watch_product():
                       broadcast=True)
         socketio.emit('image', {'image': result_image},
                       room=room, broadcast=True)
+        # Unpause tracker
+        tracker.unpause()
         # Add log to db
         log = LogText(message=message, time=t, camera_id=room)
         log.save_to_db()

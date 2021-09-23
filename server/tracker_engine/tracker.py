@@ -15,16 +15,33 @@ class TrackerMulti(metaclass=Singleton):
         self.config = TRACKER
         # {id: string, bbox: list[], is_out: bool}
         self.objs = []
+        self.updating = False
+        self.old_ids = []
         # count for no detect frame
         self.count = 0
         print('Tracking engine booted')
+    
+    def pause(self):
+        self.updating = True
+    
+    def unpause(self):
+        self.updating = False
+    
+    def isPausing(self):
+        return self.updating
 
-    def update(self, frame, states=[]):
+    def update(self, frame, states=[], reset=False):
         # If false => Save image
         self.frame = frame
+        if reset:
+            self.old_ids = [id for id in self.objs]
+            self.objs = []
+            self.count = 0
         if states:
             if self.objs:
                 for state in states:
+                    if state['id'] in self.old_ids:
+                        return True
                     check_index = -1
                     for idx, element in enumerate(self.objs):
                         # print(idx, ' - ', element)
@@ -52,6 +69,7 @@ class TrackerMulti(metaclass=Singleton):
                 self.objs = []
                 self.count = 0
                 return False
+        
         return True
 
     def draw_bbox(self, frame):

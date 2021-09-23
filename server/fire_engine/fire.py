@@ -43,6 +43,7 @@ class FireAlarm(metaclass=Singleton):
             print('Fire model output: ', output)
             _, predicted = torch.max(output.data, 1)
             predicted = predicted.item()
+            print('Fire detect time: {} s'.format(time.time() - t))
             if predicted != 1:
                 return True
             # else:
